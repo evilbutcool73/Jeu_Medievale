@@ -20,7 +20,7 @@ class Noble(Personne):
         Perçoit un impôt en prenant une part des ressources de chaque roturier.
         """
         for roturier in self.roturiers:
-            impots = roturier.ressources // 2  # Par exemple, le noble prend 50 % des ressources du roturier
+            impots = roturier.ressources * 0.2  # Par exemple, le noble prend 50 % des ressources du roturier
             roturier.diminuer_ressources(impots)
             self.augmenter_ressources(impots)
 

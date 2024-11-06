@@ -1,6 +1,7 @@
 from src.models import RecolteAbondante
 from src.models import Epidemie
 from src.models import Guerre
+from src.models import Evenement
 
 class GameController:
     def __init__(self):

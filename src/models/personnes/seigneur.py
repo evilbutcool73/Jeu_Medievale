@@ -19,7 +19,7 @@ class Seigneur(Noble):
         Perçoit un impôt uniquement des nobles vassaux.
         """
         for vassal in self.vassaux:
-            vassal_impots = vassal.ressources // 2  # Le seigneur prend 50 % des ressources de chaque noble vassal
+            vassal_impots = vassal.ressources * 0.1  # Le seigneur prend 50 % des ressources de chaque noble vassal
             vassal.diminuer_ressources(vassal_impots)
             self.augmenter_ressources(vassal_impots)
 

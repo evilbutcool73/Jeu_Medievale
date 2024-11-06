@@ -3,18 +3,20 @@ class Personne:
     Classe de base pour représenter une personne dans la société médiévale.
     """
 
-    def __init__(self, nom: str, age: int, ressources: int, argent: int):
+    def __init__(self, nom: str, age: int, ressources: int, argent: int, bonheur: int):
         self.nom = nom
         self.age = age
         self.ressources = ressources
         self.argent = argent
+        self.bonheur = bonheur
 
     def __str__(self):
         return (
             f"Nom : {self.nom}, "
             f"Âge : {self.age}, "
             f"Ressources : {self.ressources}, "
-            f"Argent : {self.argent}"
+            f"Argent : {self.argent},"
+            f"Bonheur : {self.bonheur}"
         )
     def augmenter_ressources(self, montant: int):
         """Augmente les ressources de la personne de la valeur spécifiée."""
@@ -31,3 +33,11 @@ class Personne:
     def diminuer_argent(self, montant: int):
         """Diminue l'argent de la personne de la valeur spécifiée, sans aller en dessous de zéro."""
         self.argent = max(0, self.argent - montant)
+
+    def augmenter_bonheur(self, nombre: int):
+        """Augmente le bonheure de la personne spécifiée"""
+        self.bonheur += nombre
+
+    def diminuer_bonheur(self, nombre: int):
+        """Diminue le bonheure de la personne spécifiée"""
+        self.bonheur += max(0, self.argent - nombre)
