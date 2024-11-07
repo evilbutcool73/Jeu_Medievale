@@ -28,3 +28,5 @@ for tour in range(3):
     print(roturier)
     print(noble)
     print(seigneur)
+
+

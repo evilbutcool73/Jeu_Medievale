@@ -5,8 +5,8 @@ class Roturier(Personne):
     Classe représentant un roturier, un type de personne dans la société médiévale.
     """
 
-    def __init__(self, nom: str, age: int, ressources: int, argent: int, capacite_production: int):
-        super().__init__(nom, age, ressources, argent)
+    def __init__(self, nom: str, age: int, ressources: int, argent: int, capacite_production: int, bonheur: int):
+        super().__init__(nom, age, ressources, argent, bonheur)
         self.capacite_production = capacite_production
 
     def produire(self):

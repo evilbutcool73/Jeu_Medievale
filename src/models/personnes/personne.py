@@ -1,3 +1,5 @@
+import random
+
 class Personne:
     """
     Classe de base pour représenter une personne dans la société médiévale.
@@ -6,6 +8,7 @@ class Personne:
     def __init__(self, nom: str, age: int, ressources: int, argent: int, bonheur: int):
         self.nom = nom
         self.age = age
+        self.esperance_de_vie = random.randint(60, 80)
         self.ressources = ressources
         self.argent = argent
         self.bonheur = bonheur
@@ -14,10 +17,12 @@ class Personne:
         return (
             f"Nom : {self.nom}, "
             f"Âge : {self.age}, "
+            f"Esperence de vie : {self.esperance_de_vie}, "
             f"Ressources : {self.ressources}, "
-            f"Argent : {self.argent},"
+            f"Argent : {self.argent}, "
             f"Bonheur : {self.bonheur}"
         )
+    
     def augmenter_ressources(self, montant: int):
         """Augmente les ressources de la personne de la valeur spécifiée."""
         self.ressources += montant
@@ -41,3 +46,13 @@ class Personne:
     def diminuer_bonheur(self, nombre: int):
         """Diminue le bonheure de la personne spécifiée"""
         self.bonheur += max(0, self.argent - nombre)
+
+    def vieillir(self):
+        """Augmente l'âge du personnage et vérifie s'il meurt aléatoirement."""
+        self.age += 1
+        return self.mort_aleatoire()
+
+    def mort_aleatoire(self):
+        """Détermine si le personnage meurt en fonction de son âge."""
+        chance_de_mort = min((self.age - 50) * 0.05, 0.5)  # Exemple : 5% de plus par an après 50 ans, jusqu'à un max de 50%
+        return random.random() < chance_de_mort  # Retourne True si le personnage meurt

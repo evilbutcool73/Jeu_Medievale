@@ -7,8 +7,8 @@ class Noble(Personne):
     Classe représentant un noble, ayant des roturiers comme sujets.
     """
 
-    def __init__(self, nom: str, age: int, ressources: int, argent: int):
-        super().__init__(nom, age, ressources, argent)
+    def __init__(self, nom: str, age: int, ressources: int, argent: int, bonheur: int):
+        super().__init__(nom, age, ressources, argent, bonheur)
         self.roturiers: List[Roturier] = []
 
     def ajouter_roturier(self, roturier: Roturier):
@@ -20,7 +20,7 @@ class Noble(Personne):
         Perçoit un impôt en prenant une part des ressources de chaque roturier.
         """
         for roturier in self.roturiers:
-            impots = roturier.ressources * 0.2  # Par exemple, le noble prend 50 % des ressources du roturier
+            impots = int(roturier.ressources * 0.2)  # Par exemple, le noble prend 50 % des ressources du roturier
             roturier.diminuer_ressources(impots)
             self.augmenter_ressources(impots)
 

@@ -6,8 +6,8 @@ class Seigneur(Noble):
     Classe représentant un seigneur, ayant des nobles comme vassaux.
     """
 
-    def __init__(self, nom: str, age: int, ressources: int, argent: int):
-        super().__init__(nom, age, ressources, argent)
+    def __init__(self, nom: str, age: int, ressources: int, argent: int, bonheur: int):
+        super().__init__(nom, age, ressources, argent, bonheur)
         self.vassaux: List[Noble] = []
 
     def ajouter_vassal(self, vassal: Noble):
@@ -19,7 +19,7 @@ class Seigneur(Noble):
         Perçoit un impôt uniquement des nobles vassaux.
         """
         for vassal in self.vassaux:
-            vassal_impots = vassal.ressources * 0.1  # Le seigneur prend 50 % des ressources de chaque noble vassal
+            vassal_impots = int(vassal.ressources * 0.1)  # Le seigneur prend 50 % des ressources de chaque noble vassal
             vassal.diminuer_ressources(vassal_impots)
             self.augmenter_ressources(vassal_impots)
 
