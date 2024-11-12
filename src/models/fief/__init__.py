@@ -1,1 +1,2 @@
-"""from .fief import Fief"""
+from .fief import Fief
+from .village import Village

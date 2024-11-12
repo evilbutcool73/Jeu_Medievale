@@ -9,20 +9,21 @@ class Noble(Personne):
 
     def __init__(self, nom: str, age: int, ressources: int, argent: int, bonheur: int):
         super().__init__(nom, age, ressources, argent, bonheur)
-        self.roturiers: List[Roturier] = []
+        self.villages = []
 
-    def ajouter_roturier(self, roturier: Roturier):
-        """Ajoute un roturier à la liste des roturiers du noble."""
-        self.roturiers.append(roturier)
+    def ajouter_village(self, village):
+        self.villages.append(village)
 
-    def percevoir_impot(self):
-        """
-        Perçoit un impôt en prenant une part des ressources de chaque roturier.
-        """
-        for roturier in self.roturiers:
-            impots = int(roturier.ressources * 0.2)  # Par exemple, le noble prend 50 % des ressources du roturier
-            roturier.diminuer_ressources(impots)
-            self.augmenter_ressources(impots)
+    def produire_ressources(self):
+        """Appelle la production dans chaque village sous le contrôle du noble."""
+        for village in self.villages:
+            village.produire_ressources()
+
+    def percevoir_impots(self):
+        """Collecte les impôts de chaque village sous le contrôle du noble."""
+        total_impots = sum(village.percevoir_impots() for village in self.villages)
+        self.argent += total_impots
+        return total_impots
 
     def __str__(self):
         return (

@@ -12,6 +12,7 @@ class Roturier(Personne):
     def produire(self):
         """Augmente les ressources en fonction de la capacité de production."""
         self.augmenter_ressources(self.capacite_production)
+        return self.capacite_production
 
     def __str__(self):
         return (
