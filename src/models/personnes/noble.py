@@ -16,13 +16,15 @@ class Noble(Personne):
 
     def produire_ressources(self):
         """Appelle la production dans chaque village sous le contrôle du noble."""
+        total = 0
         for village in self.villages:
-            village.produire_ressources()
+            total += village.produire_ressources()
+        self.augmenter_ressources()
 
     def percevoir_impots(self):
         """Collecte les impôts de chaque village sous le contrôle du noble."""
         total_impots = sum(village.percevoir_impots() for village in self.villages)
-        self.argent += total_impots
+        self.ressources += total_impots
         return total_impots
 
     def __str__(self):

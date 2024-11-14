@@ -23,20 +23,13 @@ class Village:
         total_impots = 0
         for habitant in self.habitants:
             if isinstance(habitant, Paysan):
-                impots = habitant.richesse * 0.5  # 50% pour les paysans
+                impots = int(habitant.ressources * 0.5)  # 50% pour les paysans
             elif isinstance(habitant, Roturier):
-                impots = habitant.richesse * 0.25  # 25% pour les roturiers
+                impots = int(habitant.ressources * 0.25)  # 25% pour les roturiers
             else:
                 impots = 0
-            habitant.richesse -= impots  # Soustraire les impôts de la richesse de l'habitant
+            habitant.diminuer_ressources(impots)  # Soustraire les impôts de la richesse de l'habitant
             total_impots += impots
-        print(f"Impôts perçus dans {self.nom} : {total_impots}")
-        return total_impots
-    
-    
-    def percevoir_impots(self):
-        """Calcule les impôts totaux collectés auprès des habitants."""
-        total_impots = sum(habitant.payer_impots() for habitant in self.habitants)
         print(f"Impôts perçus dans {self.nom} : {total_impots}")
         return total_impots
 
@@ -44,4 +37,5 @@ class Village:
         """Affiche les informations générales et de chaque habitant."""
         print(f"Village {self.nom} - Population : {self.population}")
         for habitant in self.habitants:
-            print(f"{habitant.nom} - Richesse : {habitant.richesse}, Bonheur : {habitant.bonheur}")
+            print(f"{habitant.nom} - Ressources : {habitant.ressources}, Richesse : {habitant.argent}, Bonheur : {habitant.bonheur}")
+        print("")
