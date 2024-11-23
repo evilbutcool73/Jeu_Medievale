@@ -57,8 +57,9 @@ class MenuPrincipal:
         self.menu_frame.pack_forget()  # Cache le menu principal
         self.game_frame = tk.Frame(self.root, bg="#2E2E2E")
         self.game_frame.pack(fill="both", expand=True)
-        game_controller=GameController(1)
-        map = Map(20,20,game_controller.liste_joueurs,15153)
+        game_controller=GameController(3)
+        joueurs = game_controller.liste_joueurs
+        map = Map(50,50,joueurs)
         # map.show_map(50)
         print(game_controller.joueur.argent)
         JeuInterface(self.root, self.game_frame, game_controller, map)  # Affiche l'interface du jeu

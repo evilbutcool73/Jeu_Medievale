@@ -1,8 +1,12 @@
 from src.models import *
+
 class Village:
-    def __init__(self, nom):
+        
+    def __init__(self, nom, coords, couleur: str = "green" ):
         self.nom = nom
         self.habitants = []  # Liste d'instances de Roturier et de Paysan
+        self.coords = coords
+        self.couleur = couleur
 
     def ajouter_habitant(self, habitant):
         """Ajoute un habitant au village."""

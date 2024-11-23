@@ -4,6 +4,7 @@ import random
 from ..views.Type import TYPE
 from ..views.case import Case
 from math import sqrt
+from src.models import Village  # Import de la classe Village
 
 
 class Map:
@@ -37,26 +38,31 @@ class Map:
         random.seed(self.seed)
         village_positions = []
         
-        for _ in range(len(self.liste_joueur)):
+        for joueur in self.liste_joueur:
             x_central, y_central = self.random_village_position(village_positions)
             village_positions.append((x_central, y_central))
-            
-            owner = self.liste_joueur.pop()
-            self.grid[x_central][y_central].type = TYPE.village
-            self.grid[x_central][y_central].proprio = owner
 
-            # Define surrounding area as plains
+            # Création d'un village avec les coordonnées
+            village = Village(nom=f"Village de {joueur.nom}", coords=(x_central, y_central))
+            joueur.ajouter_village(village)
+            # print('joueur : ',joueur)
+
+            # Définir la case centrale comme un village
+            self.grid[y_central][x_central].type = TYPE.village
+            self.grid[y_central][x_central].villageproprio = village
+
+            # Définir les zones autour comme des plaines
             for i in range(-2, 3):
                 for j in range(-2, 3):
                     if abs(i) + abs(j) <= 2 and abs(i) + abs(j) != 0:
                         new_x, new_y = x_central + i, y_central + j
-                        self.grid[new_x][new_y].type = TYPE.plaine
-                        self.grid[new_x][new_y].proprio = owner
+                        self.grid[new_y][new_x].type = TYPE.plaine
+                        self.grid[new_y][new_x].villageproprio = village
 
     def random_village_position(self, village_positions):
         while True:
-            x_central = random.randint(3, self.height - 4)
-            y_central = random.randint(3, self.width - 4)
+            x_central = random.randint(3, self.width - 4) # Pas de spawn trop près des bords
+            y_central = random.randint(3, self.height - 4)
             if all(sqrt((x_central - x)**2 + (y_central - y)**2) >= 4 for x, y in village_positions):
                 return x_central, y_central
 
@@ -92,48 +98,3 @@ class Map:
         else:
             return TYPE.plaine
 
-    def show_map(self, cell_size):
-        root = tk.Tk()
-        root.title("Carte")
-        
-        canvas = tk.Canvas(root, height=self.height * cell_size, width=self.width * cell_size)
-        canvas.pack()
-
-        colors = {
-            TYPE.plaine: "palegoldenrod",
-            TYPE.montagne: "gray",
-            TYPE.montagneclair: "lightgray",
-            TYPE.eau: "steelblue",
-            TYPE.eauclair: "lightskyblue",
-            TYPE.foret: "darkgreen",
-            TYPE.foretclair: "forestgreen",
-            TYPE.village: "brown"
-        }
-
-        for row in self.grid:
-            for cell in row:
-                color = colors.get(cell.type, "white")
-                x0, y0 = cell.x * cell_size, cell.y * cell_size
-                x1, y1 = x0 + cell_size, y0 + cell_size
-                canvas.create_rectangle(x0, y0, x1, y1, fill=color, outline="")
-
-                if cell.proprio and cell.type != TYPE.village:
-                    step = 10
-                    for k in range(0, cell_size + 1, step):
-                        canvas.create_line(x0 + k, y0, x0, y0 + k, fill=cell.proprio.couleur, width=1)
-                        canvas.create_line(x1 - k, y1, x1, y1 - k, fill=cell.proprio.couleur, width=1)
-
-        root.mainloop()
-
-# Example usage
-# width = 60
-# height = 40
-# nb_village = 2
-# seed = 15153
-# cell_size = 10
-# P1 = Seigneur("main", "cara", 18, 120, 5, 200, "red")
-# P2 = Seigneur("bot", "cara", 18, 120, 5, 200, "violet")
-# liste_joueur = [P1, P2]
-
-# game_map = Map(width, height, nb_village, liste_joueur, seed)
-# game_map.show_map(cell_size)

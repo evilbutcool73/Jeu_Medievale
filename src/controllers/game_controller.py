@@ -15,16 +15,16 @@ class GameController:
         self.joueur = Noble("joueur", 20, 10, 10, 5)
 
         # Création du village
-        self.village_joueur = Village("Village du Joueur")
-        self.village_joueur.ajouter_habitant(self.roturier1)
-        self.village_joueur.ajouter_habitant(self.roturier2)
-        self.village_joueur.ajouter_habitant(self.paysan1)
+        # self.village_joueur = Village("Village du Joueur", )
+        # self.village_joueur.ajouter_habitant(self.roturier1)
+        # self.village_joueur.ajouter_habitant(self.roturier2)
+        # self.village_joueur.ajouter_habitant(self.paysan1)
 
-        self.joueur.ajouter_village(self.village_joueur)
+        # self.joueur.ajouter_village(self.village_joueur)
 
         self.liste_joueurs = []
         self.liste_joueurs.append(self.joueur)
-        
+        self.creer_bot(nb_bot)
         #self.village_joueur.afficher_statut()
         # Calcul de la production et perception des impôts
         #self.village_joueur.produire_ressources()
@@ -68,12 +68,8 @@ class GameController:
                 couleur=couleur
             )
             
-            # Ajouter un village au bot, si désiré
-            village_bot = Village(f"Village du Bot {i + 1}")
-            bot.ajouter_village(village_bot)
-            
             # Ajouter le bot à la liste des bots
-            self.liste_bot.append(bot)
+            self.liste_joueurs.append(bot)
 
 
     # def verifier_declenchement_guerre(self, seigneurs: List[Seigneur]):
