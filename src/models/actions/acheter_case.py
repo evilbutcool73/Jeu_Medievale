@@ -1,5 +1,5 @@
 from ...views.generationmap import Map
-from ...views.Type import TYPE
+from ...views.TYPE import TYPE
 
 class AcheterCase:
     def __init__(self, jeu_interface, prix_case = 1):

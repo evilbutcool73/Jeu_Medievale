@@ -1,5 +1,3 @@
-from src.controllers import *
-from src.models import *
 from src.views.menu import MenuPrincipal
 import tkinter as tk
 

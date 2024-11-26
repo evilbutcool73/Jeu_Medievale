@@ -1,8 +1,8 @@
 import tkinter as tk
 from perlin_noise import PerlinNoise
 import random
-from ..views.Type import TYPE
-from ..views.case import Case
+from .TYPE import TYPE
+from src.views.Case import Case
 from math import sqrt
 from src.models import Village  # Import de la classe Village
 
@@ -63,7 +63,7 @@ class Map:
         while True:
             x_central = random.randint(3, self.width - 4) # Pas de spawn trop près des bords
             y_central = random.randint(3, self.height - 4)
-            if all(sqrt((x_central - x)**2 + (y_central - y)**2) >= 4 for x, y in village_positions):
+            if all(sqrt((x_central - x)**2 + (y_central - y)**2) >= 5 for x, y in village_positions):
                 return x_central, y_central
 
     def generate_map(self):

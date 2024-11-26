@@ -1,4 +1,4 @@
-from ..views.Type import TYPE
+from .TYPE import TYPE
 
 class Case:
     def __init__(self, x=0, y=0, type=TYPE.plaine, villageproprio=None, lhabitant=None) -> None:
