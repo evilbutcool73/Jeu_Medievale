@@ -1,46 +1,113 @@
 from .personne import Personne
 from .roturier import Roturier
+from .soldat import Soldat
+from src.views import Case
+
 from typing import List
 
 class Noble(Personne):
     """
-    Classe représentant un noble, ayant des roturiers comme sujets et des villages sous son contrôle.
+    Classe représentant un noble, ayant des roturiers comme sujets.
     """
+    from src.views import Case
 
-    def __init__(self, nom: str, age: int, ressources: int, argent: int, bonheur: int, couleur: str = "green"):
+    def __init__(self, nom: str, age: int, ressources: int, argent: int, bonheur: int, couleur_bordure="#FFFFFF"):
         super().__init__(nom, age, ressources, argent, bonheur)
-        self.villages = []  # Liste des villages contrôlés
-        self.couleur = couleur
+        self.couleur_bordure = couleur_bordure  # Couleur unique pour le seigneur
+        self.village_noble = None
+        self.armee: List[Soldat] = []  # Liste des soldats appartenant au Noble
+        self.seigneur = None  # Instance de Seigneur
+        self.cases: List[Case] = []  # Liste des cases détenues par le Noble
+
 
     def ajouter_village(self, village):
-        """Ajoute un village sous le contrôle du noble."""
-        village.couleur = self.couleur
-        self.villages.append(village)
-        
-        print("ajouter village a ", self, "au coord : ", village.coords)
+        """Ajoute un village au noble s'il n'en a pas déjà un."""
+        if self.village_noble is None:
+            self.village_noble = village
+        else:
+            print(f"{self.nom} a déjà un village et ne peut en ajouter un autre.")
 
     def produire_ressources(self):
-        """Appelle la production dans chaque village sous le contrôle du noble."""
-        total = 0
-        for village in self.villages:
-            total += village.produire_ressources()
-        self.ressources += total
-        print(f"Production totale collectée par {self.nom} : {total}")
+        """Appelle la production dans le village sous le contrôle du noble."""
+        if self.village_noble:
+            total = self.village_noble.produire_ressources()
+            self.augmenter_ressources(total)
+            return total
+        return 0
 
     def percevoir_impots(self):
-        """Collecte les impôts de chaque village sous le contrôle du noble."""
-        total_impots = sum(village.percevoir_impots() for village in self.villages)
-        self.ressources += total_impots
-        print(f"Impôts collectés par {self.nom} : {total_impots}")
-        return total_impots
-
-    def coord_village(self):
-        return self.villages[0].coords
+        """Collecte les impôts du village sous le contrôle du noble."""
+        if self.village_noble:
+            total_impots = self.village_noble.percevoir_impots()
+            self.augmenter_ressources(total_impots)
+            return total_impots
+        return 0
     
-    def afficher_statut(self):
-        """Affiche le statut du noble, de ses ressources et de ses villages."""
-        print(f"Noble {self.nom} - Ressources : {self.ressources}, Bonheur : {self.bonheur}")
-        print(f"Villages contrôlés : {len(self.villages)}")
-        for village in self.villages:
-            village.afficher_statut()
-        print("")
+    def recruter(self, soldat):
+        """Recrute un soldat pour l'armée du noble."""
+        self.armee.append(soldat)
+        if soldat.type_soldat == "infanterie":
+            self.diminuer_argent(5)
+        elif soldat.type_soldat == "cavalier":
+            self.diminuer_argent(10)
+        print(f"{self.nom} a recruté {soldat.nom} dans son armée.")
+    
+    def ajouter_case(self, case):
+        """Permet au noble d'acheter une case."""
+        self.cases.append(case)  # Ajouter la case à la liste des cases détenues
+            
+    def devenir_seigneur(self, noble_vassalisé):
+        from .seigneur import Seigneur
+        from src.controllers import GameController
+        """Transforme le noble en seigneur et promeut un nouvel habitant au rang de noble."""
+        plus_riche = self.village_noble.trouver_plus_riche()
+        if plus_riche:
+            # Crée un nouveau noble pour le plus riche habitant
+            nouveau_noble = Noble(plus_riche.nom, plus_riche.age, plus_riche.ressources, plus_riche.argent, plus_riche.bonheur)
+            nouveau_noble.village_noble = self.village_noble  # Transfert du village au nouveau noble
+            self.village_noble.habitants.remove(plus_riche)  # Retire le plus riche des habitants
+
+            # Retourne une instance de Seigneur avec le village géré par le nouveau noble
+            seigneur = Seigneur("seigneur", self.age, self.ressources, self.argent, self.bonheur, self.couleur_bordure)
+            seigneur.vassaux.append(nouveau_noble)
+            seigneur.vassaux.append(noble_vassalisé)
+            seigneur.cases = self.cases
+            nouveau_noble.seigneur = seigneur
+            nouveau_noble.village_noble = self.village_noble
+            noble_vassalisé.seigneur = seigneur
+            for case in seigneur.cases:
+                case.proprietaire = seigneur
+            print(noble_vassalisé.cases)
+            # Transfert des cases du noble vassalisé au seigneur
+            for case in noble_vassalisé.cases:
+                seigneur.ajouter_case(case)
+                case.proprietaire = seigneur
+            noble_vassalisé.cases.clear()
+            print(seigneur.cases)
+
+            print(f"{self.nom} devient seigneur, et {plus_riche.nom} devient noble et gère le village.")
+            return seigneur
+        else:
+            print("Pas d'habitants disponibles pour devenir noble.")
+            return None
+
+    def possede_case_adjacente(self, case):
+        """Vérifie si le joueur possède une case adjacente à la case donnée."""
+        adjacentes = [
+            (case.row - 1, case.col),  # Haut
+            (case.row + 1, case.col),  # Bas
+            (case.row, case.col - 1),  # Gauche
+            (case.row, case.col + 1)   # Droite
+        ]
+        for adj in adjacentes:
+            for c in self.cases:
+                if c.row == adj[0] and c.col == adj[1]:
+                    return True
+        return False
+
+    def __str__(self):
+        return (
+            super().__str__() +
+            f", Type : Noble, "
+            f"Village : {self.village_noble}"
+        )

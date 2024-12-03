@@ -1,7 +1,5 @@
 import tkinter as tk
 from tkinter import font
-from ..controllers import GameController
-from ..views.generationmap import Map
 from ..views.interface import JeuInterface
 from  ..views.settingsinterface import SettingsInterface
 import json
@@ -80,19 +78,11 @@ class MenuPrincipal:
 
     def lancer_jeu(self):
         """Lance l'interface de jeu dans la même fenêtre."""
-        # Recuperation des settings
-        with open("src/settings.json", "r") as f:
-           data = json.load(f)
-        taille_map = data["TAILLE_MAP"]
-        nb_bot = data["NB_BOT"]
-        seed = data["SEED"]
-        
         self.menu_frame.pack_forget()  # Cache le menu principal
         self.game_frame = tk.Frame(self.root, bg="#2E2E2E")
         self.game_frame.pack(fill="both", expand=True)
-        
-        game_controller=GameController(nb_bot)
-        joueurs = game_controller.liste_joueurs
-        map = Map(taille_map,taille_map,joueurs,seed)
+        from ..controllers import GameController
+
+        game_controller=GameController()
         print(game_controller.joueur.argent)
-        JeuInterface(self.root, self.game_frame, game_controller, map)  # Affiche l'interface du jeu
+        JeuInterface(self.root, self.game_frame, game_controller)  # Affiche l'interface du jeu

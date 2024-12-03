@@ -20,8 +20,8 @@ class MapDrag:
 
     def sur_map_drag(self, event):
         # Sensibilité 
-        lx = (event.x - self.debut_x) / self.map_manager.cell_size
-        ly = (event.y - self.debut_y) / self.map_manager.cell_size
+        lx = (event.x - self.debut_x) / self.map_manager.case_size
+        ly = (event.y - self.debut_y) / self.map_manager.case_size
         dx = int(lx * self.sensibilite)
         dy = int(ly * self.sensibilite)
         if dx != 0 or dy != 0:
@@ -33,8 +33,8 @@ class MapDrag:
         nouveau_compenser_y = self.map_manager.map_compenser_y - dy
 
         # Limiter les compensateurs aux bornes de la carte
-        max_compenser_x = len(self.map_manager.map.grid[0]) - self.map_manager.nb_colonnes_visibles
-        max_compenser_y = len(self.map_manager.map.grid) - self.map_manager.nb_lignes_visibles
+        max_compenser_x = len(self.map_manager.grid[0]) - self.map_manager.nb_colonnes_visibles
+        max_compenser_y = len(self.map_manager.grid) - self.map_manager.nb_lignes_visibles
 
         nouveau_compenser_x = max(min(nouveau_compenser_x, max_compenser_x), 0)
         nouveau_compenser_y = max(min(nouveau_compenser_y, max_compenser_y), 0)

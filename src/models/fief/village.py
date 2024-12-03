@@ -1,17 +1,22 @@
 from src.models import *
-
 class Village:
-        
-    def __init__(self, nom, coords, couleur: str = "green" ):
+    def __init__(self, nom, x = None, y = None):
         self.nom = nom
         self.habitants = []  # Liste d'instances de Roturier et de Paysan
-        self.coords = coords
-        self.couleur = couleur
+        self.noble = None  # Instance de Noble
+        self.x= x
+        self.y = y
 
+    def get_coords(self):
+        return (self.x, self.y)
     def ajouter_habitant(self, habitant):
         """Ajoute un habitant au village."""
         self.habitants.append(habitant)
 
+    def ajouter_noble(self, noble):
+        """Ajoute un noble au village."""
+        self.noble = noble
+    
     @property
     def population(self):
         return len(self.habitants)
@@ -43,3 +48,23 @@ class Village:
         for habitant in self.habitants:
             print(f"{habitant.nom} - Ressources : {habitant.ressources}, Richesse : {habitant.argent}, Bonheur : {habitant.bonheur}")
         print("")
+
+    @property
+    def total_ressources(self):
+        total = 0
+        for habitant in self.habitants:
+            total += habitant.ressources
+        return total
+    
+    @property
+    def total_argent(self):
+        total = 0
+        for habitant in self.habitants:
+            total += habitant.argent
+        return total
+
+    def trouver_plus_riche(self):
+        """Retourne l'habitant le plus riche du village."""
+        if not self.habitants:
+            return None
+        return max(self.habitants, key=lambda habitant: habitant.argent)

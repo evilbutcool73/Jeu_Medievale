@@ -4,14 +4,14 @@ import random
 from .TYPE import TYPE
 from src.views.Case import Case
 from math import sqrt
-from src.models import Village  # Import de la classe Village
+# from src.models import Village  # Import de la classe Village
 
 
-class Map:
-    def __init__(self, width, height, liste_joueur, seed=None):
+class GenerateMap:
+    def __init__(self, width, height, liste_villages, seed=None):
         self.width = width
         self.height = height
-        self.liste_joueur = liste_joueur
+        self.liste_villages = liste_villages
         self.seed = seed
         self.grid = self.generate_map()
 
@@ -38,18 +38,16 @@ class Map:
         random.seed(self.seed)
         village_positions = []
         
-        for joueur in self.liste_joueur:
+        for village in self.liste_villages:
             x_central, y_central = self.random_village_position(village_positions)
             village_positions.append((x_central, y_central))
 
-            # Création d'un village avec les coordonnées
-            village = Village(nom=f"Village de {joueur.nom}", coords=(x_central, y_central))
-            joueur.ajouter_village(village)
-            # print('joueur : ',joueur)
+            village.x = x_central
+            village.y = y_central
 
             # Définir la case centrale comme un village
             self.grid[y_central][x_central].type = TYPE.village
-            self.grid[y_central][x_central].villageproprio = village
+            self.grid[y_central][x_central].proprietaire = village
 
             # Définir les zones autour comme des plaines
             for i in range(-2, 3):
@@ -57,7 +55,7 @@ class Map:
                     if abs(i) + abs(j) <= 2 and abs(i) + abs(j) != 0:
                         new_x, new_y = x_central + i, y_central + j
                         self.grid[new_y][new_x].type = TYPE.plaine
-                        self.grid[new_y][new_x].villageproprio = village
+                        self.grid[new_y][new_x].proprietaire = village
 
     def random_village_position(self, village_positions):
         while True:
