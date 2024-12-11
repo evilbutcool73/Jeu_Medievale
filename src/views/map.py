@@ -23,14 +23,14 @@ class Map:
         # self.map_data = [[None for _ in range(cols)] for _ in range(rows)]
         self.selected_villages = []  # Liste des villages sélectionnés
         self.selected_action = None  # Action en cours
-
+        self.territoire_selectionne = []
         self.village_affiché = None
 
 
         self.grid = GenerateMap(50,50,self.gamecontroller.villages).grid
-         # Cadre pour la carte (grille)
+        # Cadre pour la carte (grille)
         self.map_frame = tk.Frame(self.root, bg="#2E2E2E")
-        self.map_frame.pack(expand=True, fill="both", padx=20, pady=10)
+        self.map_frame.pack(expand=True, fill="both", padx=5, pady=1)
         self.map = map
         
         # Create map and bind mouse events for dragging
@@ -114,7 +114,7 @@ class Map:
             TYPE.eauclair: "#87ceeb",     # lightskyblue
             TYPE.foret: "#006400",        # darkgreen
             TYPE.foretclair: "#228b22",   # forestgreen
-            TYPE.village: "#a52a2a"       # brown
+            TYPE.village: "#A67B5B"       # brown #a52a2a
         }
 
         for row in range(self.nb_lignes_visibles):  # Dynamique pour les lignes
@@ -134,10 +134,13 @@ class Map:
                     else:
                         color = colors.get(case.type, "white")
                     self.canvas.create_rectangle(x0, y0, x1, y1, fill=color, outline="")
+                    #self.dessiner_bordures(case, x0, y0, x1, y1)
+        self.mettre_a_jour_bordures()
+        keys_list = list(self.highlighted_cases.keys())
+        self.highlighted_cases.clear()
+        for i in keys_list:
+            self.highlight_case(i[0], i[1])
 
-                    # Ajouter un motif de propriété si applicable
-                    if case.proprietaire:
-                        self.dessiner_bordures(case, x0, y0, x1, y0)
 
     def on_click(self, event):
         """Gère les clics sur la carte."""
@@ -151,9 +154,7 @@ class Map:
         # Calculer les coordonnées de la case cliquée
         row = event.y // self.case_size + self.map_compenser_y
         col = event.x // self.case_size + self.map_compenser_x
-
         case_instance = self.grid[row][col] # Récupère l'objet Case associé
-
         if case_instance is None:
             print("Case non trouvée.")
             return
@@ -163,13 +164,12 @@ class Map:
         # Vérifier si la caseule est un village
         village = case_instance.village
         type_case = case_instance.type
-        print(type_case, self.selected_action, self.gamecontroller.joueur.possede_case_adjacente(case_instance))
-        print(isinstance(self.gamecontroller.joueur,Seigneur))
-        if village and self.selected_action in action_necessitant_village:
-            print(self.gamecontroller.obtenir_villages_joueur(self.gamecontroller.joueur))
+        if self.selected_action in action_necessitant_village:
             if village not in self.gamecontroller.obtenir_villages_joueur(self.gamecontroller.joueur):
-                print(f"Le village {village.nom} ne vous appartient pas.")
-                self.interface.ajouter_evenement("Vous ne possedez pas ce village.")
+                if village :
+                    self.interface.ajouter_evenement("Vous ne possedez pas ce village.")
+                else:
+                    self.interface.ajouter_evenement("Ceci n'est pas un village.")
                 return
             if village in self.selected_villages:
                 self.selected_villages.remove(village)
@@ -179,13 +179,13 @@ class Map:
                 self.selected_villages.append(village)
                 self.highlight_case(case_instance.row, case_instance.col)
                 print(f"Village sélectionné : {village.nom}")
-        elif type_case == TYPE.plaine and self.selected_action in action_necessitant_territoire and self.gamecontroller.joueur.possede_case_adjacente(case_instance):
-            if case_instance not in self.territoire_selectionne and len(self.territoire_selectionne)==1:
+        elif self.selected_action in action_necessitant_territoire and case_instance.proprietaire is None: #and self.gamecontroller.joueur.possede_case_adjacente(case_instance)
+            """if case_instance not in self.territoire_selectionne and len(self.territoire_selectionne)==1:
                 self.unhighlight_case(self.territoire_selectionne[0].row, self.territoire_selectionne[0].col)
                 self.territoire_selectionne = []
                 self.territoire_selectionne.append(case_instance)
-                self.highlight_case(case_instance.row, case_instance.col)
-            elif case_instance not in self.territoire_selectionne:
+                self.highlight_case(case_instance.row, case_instance.col)"""
+            if case_instance not in self.territoire_selectionne:
                 self.territoire_selectionne.append(case_instance)
                 self.highlight_case(case_instance.row, case_instance.col)
                 print(f"Case sélectionnée : ({case_instance.row}, {case_instance.col})")
@@ -202,7 +202,7 @@ class Map:
             if self.selected_action not in self.selected_villages and len(self.selected_villages)==1:
                 self.unhighlight_case(self.selected_villages[0].row, self.selected_villages[0].col)
                 self.selected_villages = []
-                self.territoire_selectionne.append(case_instance)
+                self.selected_villages.append(case_instance)
                 self.highlight_case(case_instance.row, case_instance.col)
             elif case_instance not in self.selected_villages :
                 print(case_instance)
@@ -221,11 +221,10 @@ class Map:
             # Si déjà en surbrillance, ne rien faire
             return
 
-        x1 = col * self.case_size
-        y1 = row * self.case_size
+        x1 = (row- self.map_compenser_x) * self.case_size
+        y1 = (col- self.map_compenser_y) * self.case_size
         x2 = x1 + self.case_size
         y2 = y1 + self.case_size
-
         # Créer un rectangle rouge autour de la caseule
         rect_id = self.canvas.create_rectangle(
             x1, y1, x2, y2, outline="red", width=3, state="disabled"
@@ -267,18 +266,12 @@ class Map:
             """
             Retourne le village associé à une case donnée (row, col), ou None si vide.
             """
-            # Récupérer l'ID de la case à partir de la position
-            case_id = None
-            for id_case, case_instance in self.case_id_map.items():
-                if case_instance.row == row and case_instance.col == col:
-                    case_id = id_case
-                    break
-    
-            if case_id is None:
-                return None
+            # Calculer les coordonnées de la case cliquée
+            row = event.y // self.case_size + self.map_compenser_y
+            col = event.x // self.case_size + self.map_compenser_x
     
             # Récupérer les données de la caseule
-            case_instance = self.case_id_map[case_id]
+            case_instance = self.grid[row][col] # Récupère l'objet Case associé
     
             # Vérifier si la caseule est un village
             village = case_instance.type
@@ -292,35 +285,49 @@ class Map:
         for d_row, d_col in directions:
             voisin_row = case.row + d_row
             voisin_col = case.col + d_col
-            if 0 <= voisin_row < self.rows and 0 <= voisin_col < self.cols:
-                ## changer la façon de recup les voisins
-                for id_case, case_instance in self.case_id_map.items():
-                    if case_instance.row == voisin_row and case_instance.col == voisin_col:
-                        voisins.append(case_instance)
-                        break
+            if 0 <= voisin_row < len(self.grid) and 0 <= voisin_col < len(self.grid[0]):
+                case_instance = self.grid[voisin_col][voisin_row]
+                voisins.append(case_instance)
         return voisins
 
     def dessiner_bordures(self, case, x1, y1, x2, y2):
         """Dessine les bordures uniquement sur les arêtes adjacentes à un territoire différent."""
+        if not case.proprietaire:
+            return
         voisins = self.get_voisins(case)
 
         # Supprime d'abord les bordures existantes
         self.canvas.delete(f"border_{case.row}_{case.col}")
-
+        # Définir un décalage pour les bordures
+        offset = 2
         # Détermine la couleur du propriétaire (seigneur ou noble)
-        couleur_bordure = case.proprietaire.noble.couleur_bordure if case.proprietaire else "black"
-
+        couleur_bordure = case.proprietaire.couleur_bordure if case.proprietaire else "black"
+        #print(case.proprietaire.noble.couleur_bordure)
         for voisin in voisins:
             if voisin.proprietaire != case.proprietaire:
-                print("border")
-                if voisin.row < case.row:  # Haut
-                    self.canvas.create_line(x1, y1, x2, y1, fill=couleur_bordure, width=2, tags=f"border_{case.row}_{case.col}")
-                elif voisin.row > case.row:  # Bas
-                    self.canvas.create_line(x1, y2, x2, y2, fill=couleur_bordure, width=2, tags=f"border_{case.row}_{case.col}")
-                elif voisin.col < case.col:  # Gauche
-                    self.canvas.create_line(x1, y1, x1, y2, fill=couleur_bordure, width=2, tags=f"border_{case.row}_{case.col}")
-                elif voisin.col > case.col:  # Droite
-                    self.canvas.create_line(x2, y1, x2, y2, fill=couleur_bordure, width=2, tags=f"border_{case.row}_{case.col}")
+                if voisin.col < case.col:  # Haut
+                    self.canvas.create_line(x1 + offset, y1 + offset, x2 - offset, y1 + offset, fill=couleur_bordure, width=2, tags=f"border_{case.row}_{case.col}")
+                elif voisin.col > case.col:  # Bas
+                    self.canvas.create_line(x1 + offset, y2 - offset, x2 - offset, y2 - offset, fill=couleur_bordure, width=2, tags=f"border_{case.row}_{case.col}")
+                elif voisin.row < case.row:  # Gauche
+                    self.canvas.create_line(x1 + offset, y1 + offset, x1 + offset, y2 - offset, fill=couleur_bordure, width=2, tags=f"border_{case.row}_{case.col}")
+                elif voisin.row > case.row:  # Droite
+                    self.canvas.create_line(x2 - offset, y1 + offset, x2 - offset, y2 - offset, fill=couleur_bordure, width=2, tags=f"border_{case.row}_{case.col}")
+
+    def mettre_a_jour_bordures(self):
+        """Met à jour les bordures de toutes les cases."""
+        for i in self.grid:
+            for case in i:
+                x1, y1, x2, y2 = self.get_coords_case(case)
+                self.dessiner_bordures(case, x1, y1, x2, y2)
+                
+    def get_coords_case(self, case):
+        """Retourne les coordonnées de la case donnée."""
+        x1 = (case.row- self.map_compenser_x) * self.case_size
+        y1 = (case.col- self.map_compenser_y) * self.case_size
+        x2 = x1 + self.case_size
+        y2 = y1 + self.case_size
+        return x1, y1, x2, y2
     
     # Guerre
 ###  A REFAIRE ###   
@@ -328,12 +335,9 @@ class Map:
         """
         Vérifie si le territoire d'attaquant est adjacent à celui de défenseur.
         """
-        for case_id, case in self.case_id_map.items():
-            if case.proprietaire == attaquant:
-                # Vérifie les voisins de chaque case de l'attaquant
-                voisins = self.get_voisins(case)
-                for voisin in voisins:
-                    if voisin.proprietaire == defenseur:
-                        return True  # Adjacence trouvée
-        return False  # Aucun territoire adjacent trouvé
+        for case in attaquant.cases:
+            for voisin in self.get_voisins(case):
+                if voisin.proprietaire == defenseur:
+                    return True
+        return False
 

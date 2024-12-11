@@ -10,19 +10,20 @@ from src.models import *
 
 class GameController:
     def __init__(self):
+        self.interface = None
         self.tour = 1
         self.couleurs_possibles = ["#0000FF",  # Bleu
                             "#800080",  # Violet
                             "#FFA500",  # Orange
                             "#FFFFFF"]  # Blanc
-        self.villages, self.nobles = self.creer_villages(2, 3)
+        self.villages, self.nobles = self.creer_villages(4, 3)
         self.seigneurs = []
+        self.seigneurs_vassalisés = []
         self.joueur = self.nobles[0]
         # Afficher le statut de chaque village
         for village in self.villages:
             village.afficher_statut()
         self.joueur.augmenter_argent(1000)
-        
 
         """self.roturier1 = Roturier("Roturier 1", 20, 10, 10, 10, 5)
         self.roturier2 = Roturier("Roturier 2", 20, 10, 10, 10, 5)
@@ -56,6 +57,9 @@ class GameController:
             # Guerre()
         ]
     
+    def set_interface(self, interface):
+        self.interface = interface
+
     def appliquer_evenements(self, personnages):
         """
         Applique des événements aléatoires à une liste de personnages.
@@ -157,32 +161,98 @@ class GameController:
             attaquant.armee = attaquant.armee[:len(attaquant.armee) - pertes]
             defenseur.armee = []  # Défenseur perd toute son armée
             print(f"{attaquant.nom} remporte la guerre contre {defenseur.nom} !")
-            if isinstance(attaquant,Noble) and isinstance(defenseur,Noble):
-                nouv_attaquant = attaquant.devenir_seigneur(defenseur)
+            if isinstance(attaquant,Seigneur) and isinstance(defenseur,Seigneur):
+                attaquant.ajouter_vassal_seigneur(defenseur)
+                self.seigneurs_vassalisés.append(defenseur)
+            elif isinstance(attaquant,Seigneur) and isinstance(defenseur,Noble):
+                attaquant.ajouter_vassal(defenseur)
+            elif isinstance(attaquant,Noble) and isinstance(defenseur,Seigneur):
+                nouv_attaquant, nouv_defenseur = attaquant.devenir_seigneur_contre_seigneur(defenseur)
+                self.seigneurs.append(nouv_attaquant)
+                self.seigneurs_vassalisés.append(nouv_defenseur)
+                self.nobles.remove(attaquant)
+                self.seigneurs.remove(defenseur)
+                if self.joueur == attaquant:
+                    self.joueur = nouv_attaquant
+            elif isinstance(attaquant,Noble) and isinstance(defenseur,Noble):
+                nouv_attaquant, nouv_defenseur = attaquant.devenir_seigneur(defenseur)
                 self.seigneurs.append(nouv_attaquant)
                 self.nobles.remove(attaquant)
-                print(nouv_attaquant)
-                return nouv_attaquant
-            if isinstance(attaquant,Seigneur) and isinstance(defenseur,Noble):
-                return
-                #return f"{attaquant.nom} a gagné et {defenseur.nom} a perdu toute son armée."
-
+                self.nobles.append(nouv_defenseur)
+                if self.joueur == attaquant:
+                    self.joueur = nouv_attaquant
         elif force_attaquante < force_defensive:
             pertes = int(force_attaquante / 2)  # Le défenseur subit des pertes équivalentes à la moitié de la force attaquante
             defenseur.armee = defenseur.armee[:len(defenseur.armee) - pertes]
             attaquant.armee = []  # Attaquant perd toute son armée
             print(f"{defenseur.nom} défend avec succès contre {attaquant.nom} !")
-            self.seigneur = defenseur.devenir_seigneur(attaquant)
-            self.seigneurs.append(self.seigneur)
-            return f"{defenseur.nom} a gagné et {attaquant.nom} a perdu toute son armée."
-
+            if isinstance(defenseur,Seigneur) and isinstance(attaquant,Seigneur):
+                defenseur.ajouter_vassal_seigneur(attaquant)
+                self.seigneurs_vassalisés.append(attaquant)
+            elif isinstance(defenseur,Seigneur) and isinstance(attaquant,Noble):
+                defenseur.ajouter_vassal(attaquant)
+            elif isinstance(defenseur,Noble) and isinstance(attaquant,Seigneur):
+                nouv_defenseur, nouv_attaquant = defenseur.devenir_seigneur_contre_seigneur(attaquant)
+                self.seigneurs.append(nouv_defenseur)
+                self.seigneurs_vassalisés.append(nouv_attaquant)
+                self.nobles.remove(defenseur)
+                self.seigneurs.remove(attaquant)
+                if self.joueur == attaquant:
+                    self.joueur = nouv_defenseur
+            elif isinstance(defenseur,Noble) and isinstance(attaquant,Noble):
+                nouv_defenseur, nouv_attaquant = defenseur.devenir_seigneur(attaquant)
+                self.seigneurs.append(nouv_defenseur)
+                self.nobles.remove(attaquant)
+                self.nobles.append(nouv_attaquant)
+                if self.joueur == attaquant:
+                    self.joueur = nouv_defenseur
         else:
             # En cas d'égalité, les deux armées s'annihilent
             attaquant.armee = []
             defenseur.armee = []
             print("Les deux armées se sont annihilées dans une guerre acharnée !")
             return "Match nul : les deux armées ont été détruites."
+        
+    def tour_suivant(self):
+        """Passe au tour suivant et applique les événements aléatoires."""
 
+        """if self.tour == 1:
+            print("cases:",self.joueur.cases)
+            print("cases:",self.nobles[1].cases)
+            #tester tous les scenrios de guerre
+            self.nobles[1].recruter(Soldat("Soldat 1", 10, "infanterie"))
+            self.guerre(self.nobles[1],self.nobles[2])
+            print("seigneur:",self.nobles[2].seigneur)
+            print("seigneur:",self.nobles[1].seigneur)
+
+        if self.tour == 4:
+            self.seigneurs[0].recruter(Soldat("Soldat 2", 20, "infanterie"))
+            self.guerre(self.seigneurs[0],self.seigneurs[1])
+            print("seigneur:",self.nobles[0].seigneur)
+            print("seigneur:",self.seigneurs[0].seigneur)"""
+
+        self.tour += 1
+        print(f"Tour {self.tour}")
+        #self.appliquer_evenements(self.nobles)
+        #self.appliquer_evenements(self.seigneurs)
+        #self.verifier_declenchement_guerre(self.seigneurs)
+        #self.verifier_declenchement_guerre(self.nobles)
+        """for village in self.villages:
+            village.afficher_statut()
+        for noble in self.nobles:
+            noble.__str__()
+        for seigneur in self.seigneurs:
+            seigneur.__str__()"""
+        #produire les ressources de tous les personnages
+        for seigneur in self.seigneurs:
+            total = seigneur.produire_ressources()
+            if seigneur==self.joueur:
+                self.interface.ajouter_evenement(f"Le village a produit {total} ressources.")
+        for noble in self.nobles:
+            if noble.seigneur==None:
+                total = noble.produire_ressources()
+                if noble==self.joueur:
+                    self.interface.ajouter_evenement(f"Le village a produit {total} ressources.")
 
 
     # def verifier_declenchement_guerre(self, seigneurs: List[Seigneur]):

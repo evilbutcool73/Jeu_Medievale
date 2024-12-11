@@ -31,11 +31,10 @@ class Noble(Personne):
         """Appelle la production dans le village sous le contrôle du noble."""
         if self.village_noble:
             total = self.village_noble.produire_ressources()
-            self.augmenter_ressources(total)
             return total
         return 0
 
-    def percevoir_impots(self):
+    def percevoir_impot(self, villages):
         """Collecte les impôts du village sous le contrôle du noble."""
         if self.village_noble:
             total_impots = self.village_noble.percevoir_impots()
@@ -58,7 +57,6 @@ class Noble(Personne):
             
     def devenir_seigneur(self, noble_vassalisé):
         from .seigneur import Seigneur
-        from src.controllers import GameController
         """Transforme le noble en seigneur et promeut un nouvel habitant au rang de noble."""
         plus_riche = self.village_noble.trouver_plus_riche()
         if plus_riche:
@@ -74,6 +72,7 @@ class Noble(Personne):
             seigneur.cases = self.cases
             nouveau_noble.seigneur = seigneur
             nouveau_noble.village_noble = self.village_noble
+            nouveau_noble.cases = []
             noble_vassalisé.seigneur = seigneur
             for case in seigneur.cases:
                 case.proprietaire = seigneur
@@ -86,10 +85,38 @@ class Noble(Personne):
             print(seigneur.cases)
 
             print(f"{self.nom} devient seigneur, et {plus_riche.nom} devient noble et gère le village.")
-            return seigneur
+            return seigneur, nouveau_noble
         else:
             print("Pas d'habitants disponibles pour devenir noble.")
             return None
+        
+    def devenir_seigneur_contre_seigneur(self, seigneur):
+        from .seigneur import Seigneur
+        print(len(seigneur.vassaux))
+        nouv_seigneur = Seigneur("seigneur", self.age, self.ressources, self.argent, self.bonheur, self.couleur_bordure)
+        for noble in seigneur.vassaux:
+            nouv_seigneur.ajouter_vassal(noble)
+        for case in seigneur.cases:
+            case.proprietaire = nouv_seigneur
+            nouv_seigneur.ajouter_case(case)
+        for case in self.cases:
+            case.proprietaire = nouv_seigneur
+            nouv_seigneur.ajouter_case(case)
+        seigneur.vassaux.clear()
+        seigneur.cases.clear()
+        # creer une nouvelle instance de noble pour le seigneur battu
+        nouveau_noble = Noble(seigneur.nom, seigneur.age, seigneur.ressources, seigneur.argent, seigneur.bonheur, seigneur.couleur_bordure)
+        nouveau_noble.seigneur = nouv_seigneur
+        nouveau_noble.village_noble = self.village_noble
+        nouveau_noble.village_noble.proprietaire = nouveau_noble
+        nouv_seigneur.ajouter_vassal(nouveau_noble)
+        print(len(nouv_seigneur.cases))
+        return nouv_seigneur, nouveau_noble
+        
+        
+
+
+
 
     def possede_case_adjacente(self, case):
         """Vérifie si le joueur possède une case adjacente à la case donnée."""
@@ -110,4 +137,8 @@ class Noble(Personne):
             super().__str__() +
             f", Type : Noble, "
             f"Village : {self.village_noble}"
+            f", Armée : {self.armee}"
+            f", Cases : {self.cases}"
+            f", Seigneur : {self.seigneur}"
+            f", Couleur bordure : {self.couleur_bordure}"
         )

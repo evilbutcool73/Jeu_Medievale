@@ -44,10 +44,13 @@ class GenerateMap:
 
             village.x = x_central
             village.y = y_central
-
+            village.noble.ajouter_case(self.grid[y_central][x_central])
+            
             # Définir la case centrale comme un village
             self.grid[y_central][x_central].type = TYPE.village
-            self.grid[y_central][x_central].proprietaire = village
+            self.grid[y_central][x_central].proprietaire = village.noble
+            self.grid[y_central][x_central].village = village
+            
 
             # Définir les zones autour comme des plaines
             for i in range(-2, 3):
@@ -55,7 +58,8 @@ class GenerateMap:
                     if abs(i) + abs(j) <= 2 and abs(i) + abs(j) != 0:
                         new_x, new_y = x_central + i, y_central + j
                         self.grid[new_y][new_x].type = TYPE.plaine
-                        self.grid[new_y][new_x].proprietaire = village
+                        self.grid[new_y][new_x].proprietaire = village.noble
+                        village.noble.ajouter_case(self.grid[new_y][new_x])                      
 
     def random_village_position(self, village_positions):
         while True:

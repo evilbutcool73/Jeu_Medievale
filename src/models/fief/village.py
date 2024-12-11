@@ -39,7 +39,6 @@ class Village:
                 impots = 0
             habitant.diminuer_ressources(impots)  # Soustraire les impôts de la richesse de l'habitant
             total_impots += impots
-        print(f"Impôts perçus dans {self.nom} : {total_impots}")
         return total_impots
 
     def afficher_statut(self):

@@ -9,7 +9,7 @@ class JeuInterface:
         self.main_frame = main_frame
         self.gamecontroller = game_controller
         self.root.title("Jeu Médiéval")
-        self.root.geometry("800x600")
+        self.root.geometry("900x600")
         self.root.configure(bg="#2E2E2E")
         self.root.resizable(True, True)
         self.action_selectionnee = None
@@ -70,6 +70,10 @@ class JeuInterface:
         self.actions_frame.pack(fill="x", pady=0)
         self.afficher_actions()
         self.tour_suivant()
+        game_controller.set_interface(self)
+        #afficher toutes les informations des nobles
+        for i in self.gamecontroller.nobles:
+            i.__str__()
 
         
 
@@ -112,7 +116,7 @@ class JeuInterface:
             widget.destroy()
         self.village_info_label = tk.Label(
             self.village_info_frame,
-            text="Clique droit sur un village pour voir ses informations",
+            text="CTRL + Clique droit sur un village pour voir ses informations",
             bg="#2E2E2E",
             fg="#F7F7F7",
             font=("Helvetica", 12),
@@ -156,7 +160,7 @@ class JeuInterface:
         )
         self.impot_bouton.pack(side="left", padx=10, pady=5)
 
-        # Bouton Immigration avec un menu déroulant stylisé
+        # Bouton Immigration
         self.immigration_bouton = tk.Button(
             self.actions_frame,
             text="Immigration",
@@ -175,7 +179,7 @@ class JeuInterface:
         )
         self.immigration_bouton.pack(side="left", padx=10, pady=5)
         
-        # Bouton Immigration avec un menu déroulant stylisé
+        # Bouton recruter
         self.recruter_bouton = tk.Button(
             self.actions_frame,
             text="recruter",
@@ -289,13 +293,14 @@ class JeuInterface:
             self.action_selectionnee = None
             self.reset_bouton_couleurs()
             return
+        
         # Vider le contenu précédent de `village_info_frame`
         for widget in self.village_info_frame.winfo_children():
             widget.destroy()
 
         if self.action_bouton_selectionnee == "recruter":
                 self.mettre_a_jour_infos_village(self.map.village_affiché)
-                self.soldat_selectionnee = None
+                self.action_bouton_selectionnee = None
         
         else:
             # Bouton "infanterie"
@@ -310,7 +315,7 @@ class JeuInterface:
                 activeforeground="white",
                 bd=0
             )
-            infanterie_bouton.pack(side="top", pady=5, padx=10)
+            infanterie_bouton.pack(side="top", pady=15, padx=10)
 
             # Bouton "cavalier"
             cavalier_bouton = tk.Button(
@@ -331,11 +336,16 @@ class JeuInterface:
         if self.action_selectionnee == action:
             self.action_selectionnee = None
             self.map.selected_action = None  # Réinitialiser l'action sur la carte
+            self.map.selected_villages = []
+            self.map.territoire_selectionne = []
             self.reset_bouton_couleurs()
             
         else:
             self.action_selectionnee = action
             self.map.selected_action = action  # Définir l'action sélectionnée
+            self.map.selected_villages = []
+            self.map.territoire_selectionne = []
+            self.action_bouton_selectionnee = action
             self.reset_bouton_couleurs()
             if action == "impot":
                 self.impot_bouton.config(bg="#3498DB")
@@ -399,9 +409,8 @@ class JeuInterface:
                     self.afficher_tour_journal()
                     self.ajouter_evenement("Action exécutée: Impot")
                     impot = 0
-                    for i in self.map.selected_villages:
-                        impot += i.percevoir_impots()
-                    self.gamecontroller.joueur.augmenter_ressources(impot)
+                    impot = self.gamecontroller.joueur.percevoir_impot(self.map.selected_villages)
+                    self.ajouter_evenement(f"Impôt perçu: {impot}\n")
                     #self.gamecontroller.appliquer_evenements(self.gamecontroller.joueur.village_noble.habitants)
                     self.mettre_a_jour_infos()
                     self.finir_tour()
@@ -445,7 +454,7 @@ class JeuInterface:
                 if self.map.selected_villages != []:
                     if self.map.territoires_adjacents(self.gamecontroller.joueur, self.map.selected_villages[0].proprietaire):
                         self.afficher_tour_journal()
-                        self.gamecontroller.joueur = self.gamecontroller.guerre(self.gamecontroller.joueur, self.map.selected_villages[0].proprietaire)
+                        self.gamecontroller.guerre(self.gamecontroller.joueur, self.map.selected_villages[0].proprietaire)
                         print("seigneur : ",isinstance(self.gamecontroller.joueur,Seigneur))
 
                         self.ajouter_evenement("Action exécutée: Guerre")
@@ -470,10 +479,9 @@ class JeuInterface:
         self.map.selected_action = None
         self.map.selected_villages = []
         self.map.territoire_selectionne = []
-        
 
-        self.gamecontroller.joueur.produire_ressources()
-        self.gamecontroller.tour += 1
+        self.gamecontroller.tour_suivant()
+        
         self.mettre_a_jour_infos()
         #self.gamecontroller.joueur.village_noble.afficher_statut()
         self.mettre_a_jour_infos_village(self.map.village_affiché)
