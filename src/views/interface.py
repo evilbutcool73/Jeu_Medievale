@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import font, Toplevel, ttk
 from ..models import *
+from ..views.settingsinterface import SettingsInterface
 from src.controllers import *
 
 class JeuInterface:
@@ -13,6 +14,7 @@ class JeuInterface:
         self.root.configure(bg="#2E2E2E")
         self.root.resizable(True, True)
         self.action_selectionnee = None
+        
 
         # Cadre pour l'affichage des informations en haut
         self.info_frame = tk.Frame(self.main_frame, height=50, bg="#3A3A3A")
@@ -29,12 +31,36 @@ class JeuInterface:
         self.main_content = tk.Frame(self.main_frame, bg="#2E2E2E")
         self.main_content.pack(expand=True, fill="both", padx=10, pady=10)
 
+        # Gestion de l'événement Échap pour ouvrir le menu pause
+        self.root.bind("<Escape>", self.ouvrir_menu_pause)
+
         # Colonne de gauche : carte
         self.map_frame = tk.Frame(self.main_content, bg="#2E2E2E")
         self.map_frame.pack(side=tk.LEFT, expand=True, fill="both")
         from .map import Map
         self.map = Map(self.map_frame, self.gamecontroller, rows=10, cols=10, case_size=50)
         self.map.interface = self
+
+        ### MENU PAUSE ###
+        # Cadre du menu de pause (invisible au départ)
+        # Créer un fond 
+        # self.menu_pause_canvas.create_rectangle(0, 0, self.root.winfo_width(), self.root.winfo_height()) 
+        # self.menu_pause_canvas.create_image(0,0,image=tk.PhotoImage(file="images/pause.png")) 
+        # Cadre pour les boutons dans le menu de pause
+        self.menu_frame = tk.Frame(self.root)
+
+        # Bouton Continuer
+        continue_button = tk.Button(self.menu_frame, text="Continuer", command=self.continuer_jeu, width=20, height=2)
+        continue_button.pack(pady=10)
+
+        # Bouton Paramètres
+        settings_button = tk.Button(self.menu_frame, text="Paramètres", command=self.ouvrir_parametres, width=20, height=2)
+        settings_button.pack(pady=10)
+
+        # Bouton Quitter
+        quit_button = tk.Button(self.menu_frame, text="Quitter", command=self.quitter_jeu, width=20, height=2)
+        quit_button.pack(pady=10)
+        ####
 
         # Colonne de droite : cadre principal pour les informations et le journal
         self.right_frame = tk.Frame(self.main_content, width=200, bg="#3A3A3A")
@@ -75,7 +101,23 @@ class JeuInterface:
         for i in self.gamecontroller.nobles:
             i.__str__()
 
-        
+    def ouvrir_menu_pause(self, event=None):
+        """Affiche le menu de pause (superposé à l'interface du jeu)"""
+        self.menu_frame.place(relx=0.5, rely=0.5, anchor="center", relwidth=1.0, relheight=1.0)  # Afficher le menu de pause
+
+    def continuer_jeu(self):
+        """Cache le menu de pause et reprend le jeu"""
+        self.menu_frame.place_forget()  # Cache le menu de pause
+        self.map.drag_manager.load_sensi()
+
+    def ouvrir_parametres(self):
+        """Ouvre une fenêtre pour les paramètres du jeu"""
+        self.settings = SettingsInterface(self.root, self.main_frame)
+        self.settings.creer_visu(True)  # Crée l'interface des paramètres
+
+    def quitter_jeu(self):
+        """Quitte le jeu"""
+        self.root.quit()
 
     def afficher_informations(self):
         label_font = font.Font(family="Helvetica", size=14, weight="bold")
