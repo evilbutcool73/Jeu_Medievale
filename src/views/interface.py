@@ -1,11 +1,13 @@
 import tkinter as tk
-from tkinter import font, Toplevel, ttk
+from tkinter import font, Toplevel, ttk, filedialog
+import json
 from ..models import *
 from ..views.settingsinterface import SettingsInterface
 from src.controllers import *
+import customtkinter
 
 class JeuInterface:
-    def __init__(self, root, main_frame, game_controller):
+    def __init__(self, root, main_frame, game_controller, map_data= None):
         self.root = root
         self.main_frame = main_frame
         self.gamecontroller = game_controller
@@ -14,7 +16,6 @@ class JeuInterface:
         self.root.configure(bg="#2E2E2E")
         self.root.resizable(True, True)
         self.action_selectionnee = None
-        
 
         # Cadre pour l'affichage des informations en haut
         self.info_frame = tk.Frame(self.main_frame, height=50, bg="#3A3A3A")
@@ -27,19 +28,8 @@ class JeuInterface:
         from .map import Map
         self.map = Map(self.map_frame, self.gamecontroller, rows=10, cols=10, case_size=50)"""
 
-        # Cadre principal avec deux colonnes
-        self.main_content = tk.Frame(self.main_frame, bg="#2E2E2E")
-        self.main_content.pack(expand=True, fill="both", padx=10, pady=10)
-
         # Gestion de l'événement Échap pour ouvrir le menu pause
         self.root.bind("<Escape>", self.ouvrir_menu_pause)
-
-        # Colonne de gauche : carte
-        self.map_frame = tk.Frame(self.main_content, bg="#2E2E2E")
-        self.map_frame.pack(side=tk.LEFT, expand=True, fill="both")
-        from .map import Map
-        self.map = Map(self.map_frame, self.gamecontroller, rows=10, cols=10, case_size=50)
-        self.map.interface = self
 
         ### MENU PAUSE ###
         # Cadre du menu de pause (invisible au départ)
@@ -47,20 +37,59 @@ class JeuInterface:
         # self.menu_pause_canvas.create_rectangle(0, 0, self.root.winfo_width(), self.root.winfo_height()) 
         # self.menu_pause_canvas.create_image(0,0,image=tk.PhotoImage(file="images/pause.png")) 
         # Cadre pour les boutons dans le menu de pause
-        self.menu_frame = tk.Frame(self.root)
+        self.menu_frame = tk.Frame(self.root,bg="#2E2E2E")
 
         # Bouton Continuer
-        continue_button = tk.Button(self.menu_frame, text="Continuer", command=self.continuer_jeu, width=20, height=2)
-        continue_button.pack(pady=10)
+        continue_button = tk.Button(self.menu_frame, text="Continuer", command=self.continuer_jeu, width=20, height=2,
+                                    font=("Helvetica", 16, "bold"),
+                                    bg="#1C6E8C",
+                                    fg="white",
+                                    activebackground="#145374",
+                                    activeforeground="white",
+                                    bd=0)
+        continue_button.pack(pady=(self.root.winfo_screenheight()//4 - 18 ,10))
 
         # Bouton Paramètres
-        settings_button = tk.Button(self.menu_frame, text="Paramètres", command=self.ouvrir_parametres, width=20, height=2)
+        settings_button = tk.Button(self.menu_frame, text="Paramètres", command=self.ouvrir_parametres, width=20, height=2,
+                                    font=("Helvetica", 16, "bold"),
+                                    bg="#1C6E8C",
+                                    fg="white",
+                                    activebackground="#145374",
+                                    activeforeground="white",
+                                    bd=0)
         settings_button.pack(pady=10)
 
+        # Bouton Sauvegarder
+        save_button = tk.Button(self.menu_frame, text="Sauvegarder", command=self.sauvegarder_partie, width=20, height=2,
+                                    font=("Helvetica", 16, "bold"),
+                                    bg="#1C6E8C",
+                                    fg="white",
+                                    activebackground="#145374",
+                                    activeforeground="white",
+                                    bd=0)
+        save_button.pack(pady=10)
+
         # Bouton Quitter
-        quit_button = tk.Button(self.menu_frame, text="Quitter", command=self.quitter_jeu, width=20, height=2)
+        quit_button = tk.Button(self.menu_frame, text="Quitter", command=self.quitter_jeu, width=20, height=2,
+                                    font=("Helvetica", 16, "bold"),
+                                    bg="#1C6E8C",
+                                    fg="white",
+                                    activebackground="#145374",
+                                    activeforeground="white",
+                                    bd=0)
         quit_button.pack(pady=10)
         ####
+
+        # Cadre principal avec deux colonnes
+        self.main_content = tk.Frame(self.main_frame, bg="#2E2E2E")
+        self.main_content.pack(expand=True, fill="both", padx=10, pady=10)
+
+        # Colonne de gauche : carte
+        self.map_frame = tk.Frame(self.main_content, bg="#2E2E2E")
+        self.map_frame.pack(side=tk.LEFT, expand=True, fill="both")
+        from .map import Map
+        self.map = Map(self.map_frame, self.gamecontroller, case_size=50, map_data = map_data)
+        self.map.interface = self
 
         # Colonne de droite : cadre principal pour les informations et le journal
         self.right_frame = tk.Frame(self.main_content, width=200, bg="#3A3A3A")
@@ -101,6 +130,41 @@ class JeuInterface:
         for i in self.gamecontroller.nobles:
             i.__str__()
 
+    def sauvegarder_partie(self):
+        """Sauvegarde l'état actuel de la partie dans un fichier JSON."""
+        try:
+            # Récupérer les données nécessaires
+            etat_partie = {
+                "villages": [village.to_dict() for village in self.gamecontroller.villages],  # Vous devez définir une méthode to_dict() pour Village
+                "joueur": self.gamecontroller.joueur.to_dict(),  # Méthode to_dict() pour le joueur
+                "map": self.map.to_dict(),       # Méthode to_dict() pour la carte
+                "tour": self.gamecontroller.tour
+            }
+            
+            # Ouvrir une boîte de dialogue pour choisir l'emplacement de sauvegarde
+            fichier_sauvegarde = filedialog.asksaveasfilename(
+                defaultextension=".json",
+                filetypes=[("JSON files", "*.json")],
+                title="Enregistrer la partie"
+            )
+            
+            if fichier_sauvegarde:
+                # Sauvegarder les données dans un fichier JSON
+                with open(fichier_sauvegarde, 'w', encoding='utf-8') as fichier:
+                    json.dump(etat_partie, fichier, indent=4, ensure_ascii=False)
+                self.afficher_message_journal("Partie sauvegardée avec succès !")
+            else:
+                self.afficher_message_journal("Sauvegarde annulée.")
+        
+        except Exception as e:
+            self.afficher_message_journal(f"Erreur lors de la sauvegarde : {e}")
+    
+    def afficher_message_journal(self, message):
+        """Ajoute un message dans le journal."""
+        self.journal_text.config(state=tk.NORMAL)
+        self.journal_text.insert(tk.END, f"{message}\n")
+        self.journal_text.config(state=tk.DISABLED)
+        
     def ouvrir_menu_pause(self, event=None):
         """Affiche le menu de pause (superposé à l'interface du jeu)"""
         self.menu_frame.place(relx=0.5, rely=0.5, anchor="center", relwidth=1.0, relheight=1.0)  # Afficher le menu de pause
@@ -129,7 +193,7 @@ class JeuInterface:
         self.population_label.pack(side="left", padx=15)
         self.tour_label = tk.Label(self.info_frame, text=f"Tour : {self.gamecontroller.tour}", bg="#3A3A3A", fg="#F7F7F7", font=label_font)
         self.tour_label.pack(side="right", padx=15)
-        self.armee_label = tk.Label(self.info_frame, text=f"Armée : {len(self.gamecontroller.joueur.armee)} soldats", bg="#3A3A3A", fg="#F7F7F7", font=label_font)
+        self.armee_label = tk.Label(self.info_frame, text=f"Soldats : {len(self.gamecontroller.joueur.armee)}/{self.gamecontroller.joueur.capacite_soldats}", bg="#3A3A3A", fg="#F7F7F7", font=label_font)
         self.armee_label.pack(side="left", padx=15)
     
     def mettre_a_jour_infos(self):
@@ -139,7 +203,7 @@ class JeuInterface:
         self.ressources_label.config(text=f"Ressources : {self.gamecontroller.joueur.ressources}")
         self.population_label.config(text=f"Habitants : {self.gamecontroller.obtenir_nombre_total_personnes(self.gamecontroller.joueur)}/{self.gamecontroller.joueur.capacite_habitants}")
         self.tour_label.config(text=f"Tour : {self.gamecontroller.tour}")
-        self.armee_label.config(text=f"Armée : {len(self.gamecontroller.joueur.armee)} soldats")
+        self.armee_label.config(text=f"Soldats : {len(self.gamecontroller.joueur.armee)}/{self.gamecontroller.joueur.capacite_soldats}")
 
     def ajouter_evenement(self, texte):
         """
@@ -202,11 +266,11 @@ class JeuInterface:
         )
         self.impot_bouton.pack(side="left", padx=10, pady=5)
 
-        # Bouton Immigration
-        self.immigration_bouton = tk.Button(
+        # Bouton marché
+        self.marche_bouton = tk.Button(
             self.actions_frame,
-            text="Immigration",
-            command=self.afficher_options_immigration,
+            text="Marché",
+            command=lambda: self.afficher_options_marche(),
             font=button_font,
             bg="#1C6E8C",
             fg="white",
@@ -219,12 +283,12 @@ class JeuInterface:
             width=8,
             anchor="center"  # Centrer le texte
         )
-        self.immigration_bouton.pack(side="left", padx=10, pady=5)
+        self.marche_bouton.pack(side="left", padx=10, pady=5)
         
         # Bouton recruter
         self.recruter_bouton = tk.Button(
             self.actions_frame,
-            text="recruter",
+            text="Recruter",
             command=self.afficher_options_recruter,
             font=button_font,
             bg="#1C6E8C",
@@ -239,11 +303,12 @@ class JeuInterface:
             anchor="center"  # Centrer le texte
         )
         self.recruter_bouton.pack(side="left", padx=10, pady=5)
+
         
         # Bouton pour contruire
         self.construire_bouton = tk.Button(
             self.actions_frame,
-            text="construire",
+            text="Construire",
             command=lambda: self.afficher_options_construire("contruire"),
             font=button_font,
             bg="#1C6E8C",
@@ -262,7 +327,7 @@ class JeuInterface:
         # Bouton pour declarer la guerre
         self.guerre_bouton = tk.Button(
             self.actions_frame,
-            text="guerre",
+            text="Guerre",
             command=lambda: self.selectionner_action("guerre"),
             font=button_font,
             bg="#1C6E8C",
@@ -278,60 +343,13 @@ class JeuInterface:
         )
         self.guerre_bouton.pack(side="left", padx=10, pady=5)
         
-        
-
-    def afficher_options_immigration(self):
-        """
-        Affiche deux boutons (Paysan et Roturier) dans `village_info_frame`
-        pour sélectionner une option d'immigration.
-        """
-        if self.action_selectionnee == "paysan" or self.action_selectionnee == "roturier":
-            self.action_selectionnee = None
-            self.reset_bouton_couleurs()
-            return
-        # Vider le contenu précédent de `village_info_frame`
-        for widget in self.village_info_frame.winfo_children():
-            widget.destroy()
-
-        if self.action_bouton_selectionnee == "immigration":
-            self.mettre_a_jour_infos_village(self.map.village_affiché)
-            self.action_bouton_selectionnee = None
-        else:
-            # Bouton "Paysan"
-            paysan_bouton = tk.Button(
-                self.village_info_frame,
-                text="Paysan (-1 argent)",
-                command=lambda: self.selectionner_action("paysan"),
-                font=("Helvetica", 12),
-                bg="#1C6E8C",
-                fg="white",
-                activebackground="#145374",
-                activeforeground="white",
-                bd=0
-            )
-            paysan_bouton.pack(side="top", pady=15, padx=10)
-
-            # Bouton "Roturier"
-            roturier_bouton = tk.Button(
-                self.village_info_frame,
-                text="Roturier (-2 argent)",
-                command=lambda: self.selectionner_action("roturier"),
-                font=("Helvetica", 12),
-                bg="#1C6E8C",
-                fg="white",
-                activebackground="#145374",
-                activeforeground="white",
-                bd=0
-            )
-            roturier_bouton.pack(side="top", pady=5, padx=10)
-            self.action_bouton_selectionnee = "immigration"
 
     def afficher_options_recruter(self):
         """
-        Affiche deux boutons (Paysan et Roturier) dans `village_info_frame`
-        pour sélectionner une option d'immigration.
+        Affiche deux colonnes de boutons dans `village_info_frame`
+        pour sélectionner une option de recrutement.
         """
-        if self.action_selectionnee == "infanterie" or self.action_selectionnee == "cavalier":
+        if self.action_selectionnee in ["infanterie", "cavalier", "paysan", "roturier"]:
             self.action_selectionnee = None
             self.reset_bouton_couleurs()
             return
@@ -341,14 +359,62 @@ class JeuInterface:
             widget.destroy()
 
         if self.action_bouton_selectionnee == "recruter":
-                self.mettre_a_jour_infos_village(self.map.village_affiché)
-                self.action_bouton_selectionnee = None
-        
+            self.mettre_a_jour_infos_village(self.map.village_affiché)
+            self.action_bouton_selectionnee = None
         else:
-            # Bouton "infanterie"
+            # Cadre pour les deux colonnes
+            columns_frame = tk.Frame(self.village_info_frame, bg="#2E2E2E")
+            columns_frame.pack(fill="both", expand=True)
+
+            # Colonne de gauche
+            left_column = tk.Frame(columns_frame, bg="#2E2E2E", width=100)
+            left_column.pack(side="left", fill="both", expand=True, padx=2)
+
+            separateur = ttk.Separator(columns_frame, orient="vertical")
+            separateur.pack(side="left", fill="y", pady=2)
+
+            # Colonne de droite
+            right_column = tk.Frame(columns_frame, bg="#2E2E2E", width=100)
+            right_column.pack(side="right", fill="both", expand=True, padx=2)
+
+            texte = tk.Label(left_column, text="Village", bg="#2E2E2E", fg="#F7F7F7", font=("Helvetica", 12))
+            texte.pack(pady=10)
+
+            texte2 = tk.Label(right_column, text="Armée", bg="#2E2E2E", fg="#F7F7F7", font=("Helvetica", 12))
+            texte2.pack(pady=10)
+
+            # Bouton "Paysan"
+            paysan_bouton = tk.Button(
+                left_column,
+                text="Paysan (-1)",
+                command=lambda: self.selectionner_action("paysan"),
+                font=("Helvetica", 12),
+                bg="#1C6E8C",
+                fg="white",
+                activebackground="#145374",
+                activeforeground="white",
+                bd=0
+            )
+            paysan_bouton.pack(side="top", pady=5, padx=10)
+
+            # Bouton "Roturier"
+            roturier_bouton = tk.Button(
+                left_column,
+                text="Roturier (-2)",
+                command=lambda: self.selectionner_action("roturier"),
+                font=("Helvetica", 12),
+                bg="#1C6E8C",
+                fg="white",
+                activebackground="#145374",
+                activeforeground="white",
+                bd=0
+            )
+            roturier_bouton.pack(side="top", pady=5, padx=10)
+
+            # Bouton "Infanterie"
             infanterie_bouton = tk.Button(
-                self.village_info_frame,
-                text="infanterie (-5 argent)",
+                right_column,
+                text="Infanterie (-5)",
                 command=lambda: self.selectionner_action("infanterie"),
                 font=("Helvetica", 12),
                 bg="#1C6E8C",
@@ -357,12 +423,12 @@ class JeuInterface:
                 activeforeground="white",
                 bd=0
             )
-            infanterie_bouton.pack(side="top", pady=15, padx=10)
+            infanterie_bouton.pack(side="top", pady=5, padx=10)
 
-            # Bouton "cavalier"
+            # Bouton "Cavalier"
             cavalier_bouton = tk.Button(
-                self.village_info_frame,
-                text="cavalier (-10 argent)",
+                right_column,
+                text="Cavalier (-10)",
                 command=lambda: self.selectionner_action("cavalier"),
                 font=("Helvetica", 12),
                 bg="#1C6E8C",
@@ -372,7 +438,12 @@ class JeuInterface:
                 bd=0
             )
             cavalier_bouton.pack(side="top", pady=5, padx=10)
+
+            texte_cout = tk.Label(self.village_info_frame, text="Cout: argent", bg="#2E2E2E", fg="#F7F7F7", font=("Helvetica", 8))
+            texte_cout.pack(pady=10)
+
             self.action_bouton_selectionnee = "recruter"
+            
             
     def afficher_options_construire(self,action):
         if self.action_selectionnee == "terrain" or self.action_selectionnee == "habitation" or self.action_selectionnee == "camp":
@@ -389,10 +460,32 @@ class JeuInterface:
                 self.action_bouton_selectionnee = None
         
         else:
+            # Cadre pour les deux colonnes
+            columns_frame = tk.Frame(self.village_info_frame, bg="#2E2E2E")
+            columns_frame.pack(fill="both", expand=True)
+
+            # Colonne de gauche
+            left_column = tk.Frame(columns_frame, bg="#2E2E2E", width=100)
+            left_column.pack(side="left", fill="both", expand=True, padx=2)
+
+            separateur = tk.ttk.Separator(columns_frame, orient="vertical")
+            separateur.pack(side="left", fill="y", pady=2)
+
+            # Colonne de droite
+            right_column = tk.Frame(columns_frame, bg="#2E2E2E", width=100)
+            right_column.pack(side="right", fill="both", expand=True, padx=2)
+
+            texte = tk.Label(left_column, text="Territoire", bg="#2E2E2E", fg="#F7F7F7", font=("Helvetica", 12))
+            texte.pack(pady=10)
+
+            texte2 = tk.Label(right_column, text="Batiments", bg="#2E2E2E", fg="#F7F7F7", font=("Helvetica", 12))
+            texte2.pack(pady=10)
+
+
             # Bouton "infanterie"
             terrain_bouton = tk.Button(
-                self.village_info_frame,
-                text="terrain (-5 argent)",
+                left_column,
+                text="Terrain (-5)",
                 command=lambda: self.selectionner_action("terrain"),
                 font=("Helvetica", 12),
                 bg="#1C6E8C",
@@ -401,12 +494,12 @@ class JeuInterface:
                 activeforeground="white",
                 bd=0
             )
-            terrain_bouton.pack(side="top", pady=15, padx=10)
+            terrain_bouton.pack(side="top", pady=5, padx=10)
 
             # Bouton "cavalier"
             habitation_bouton = tk.Button(
-                self.village_info_frame,
-                text="habitation (-10 argent)",
+                right_column,
+                text="Habitat (-10)",
                 command=lambda: self.selectionner_action("habitation"),
                 font=("Helvetica", 12),
                 bg="#1C6E8C",
@@ -418,8 +511,8 @@ class JeuInterface:
             habitation_bouton.pack(side="top", pady=5, padx=10)
             
             camp_bouton = tk.Button(
-                self.village_info_frame,
-                text="camp (-10 argent)",
+                right_column,
+                text="Camp (-10)",
                 command=lambda: self.selectionner_action("camp"),
                 font=("Helvetica", 12),
                 bg="#1C6E8C",
@@ -428,10 +521,23 @@ class JeuInterface:
                 activeforeground="white",
                 bd=0
             )
-            camp_bouton.pack(side="top", pady=15, padx=10)
+            camp_bouton.pack(side="top", pady=5, padx=10)
             
-            self.action_bouton_selectionnee = "contruire"
+            texte_cout = tk.Label(self.village_info_frame, text="Cout: argent", bg="#2E2E2E", fg="#F7F7F7", font=("Helvetica", 8))
+            texte_cout.pack(pady=10)
+
+            self.action_bouton_selectionnee = "construire"
     
+    def afficher_options_marche(self):
+        for widget in self.village_info_frame.winfo_children():
+            widget.destroy()
+        """texte = tk.Label(self.village_info_frame, text="Marché", bg="#2E2E2E", fg="#F7F7F7", font=("Helvetica", 12))
+        texte.pack(pady=10)
+        slider = customtkinter.CTkSlider(master=self.village_info_frame, from_=0, to=self.gamecontroller.joueur.argent, orientation="horizontal")
+        slider.pack(pady=10)
+        bouton = tk.Button(self.village_info_frame, text="Acheter", command=lambda: self.acheter_ressources(slider.get()), font=("Helvetica", 12, "bold"), bg="#1C6E8C", fg="white", activebackground="#145374", activeforeground="white", bd=0)
+        bouton.pack(pady=10)"""
+        
     def selectionner_action(self, action):
         if self.action_selectionnee == action:
             self.action_selectionnee = None
@@ -454,9 +560,7 @@ class JeuInterface:
                 #self.recruter_bouton.config(bg="#3498DB")
             #elif action == "immigration":
                 #self.immigration_bouton.config(bg="#3498DB")
-            elif action == "paysan" or action == "roturier":
-                self.immigration_bouton.config(bg="#3498DB")
-            elif action == "infanterie" or action == "cavalier":
+            elif action == "infanterie" or action == "cavalier" or action == "paysan" or action == "roturier":
                 self.recruter_bouton.config(bg="#3498DB")
             elif action == "guerre":
                 self.guerre_bouton.config(bg="#3498DB")
@@ -473,7 +577,6 @@ class JeuInterface:
 
     def reset_bouton_couleurs(self):
         self.impot_bouton.config(bg="#1C6E8C")
-        self.immigration_bouton.config(bg="#1C6E8C")
         self.recruter_bouton.config(bg="#1C6E8C")
         self.guerre_bouton.config(bg="#1C6E8C")
         self.construire_bouton.config(bg="#1C6E8C")
@@ -528,6 +631,9 @@ class JeuInterface:
                     self.ajouter_evenement("Action exécutée: Immigration\n")
                     for village in self.map.selected_villages:
                         immigration = Immigration(village.noble)
+                        if self.gamecontroller.obtenir_nombre_total_personnes(self.gamecontroller.joueur) >= self.gamecontroller.joueur.capacite_habitants:
+                            self.ajouter_evenement("Vous avez atteint votre capacité maximale d'habitants")
+                            return
                         if self.action_selectionnee == "roturier":
                             if self.gamecontroller.joueur.argent < 2:
                                 self.ajouter_evenement("Vous n'avez pas assez d'argent pour immigrer un roturier")
@@ -549,6 +655,9 @@ class JeuInterface:
 
             elif self.action_selectionnee == "infanterie" or self.action_selectionnee == "cavalier":
                 from src.models import Soldat
+                if self.gamecontroller.joueur.capacite_soldats <= len(self.gamecontroller.joueur.armee):
+                    self.ajouter_evenement("Vous avez atteint votre capacité maximale de soldats")
+                    return
                 if self.gamecontroller.joueur.argent < 5 and self.action_selectionnee == "infanterie":
                     self.ajouter_evenement("Vous n'avez pas assez d'argent pour recruter un soldat")
                     return

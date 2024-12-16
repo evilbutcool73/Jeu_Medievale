@@ -1,8 +1,8 @@
 # main.py
 import tkinter as tk
-from src.controllers import GameController
-from src.models import Roturier, Paysan
-from src.views import MenuPrincipal
+# from src.controllers import GameController
+# from src.models import Roturier, Paysan
+from src.views import MenuPrincipal 
 
 def main():
     # Ajout d'habitants

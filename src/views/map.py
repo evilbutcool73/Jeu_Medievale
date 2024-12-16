@@ -1,4 +1,5 @@
 import tkinter as tk
+import json
 # from .interface import JeuInterface
 # from src.controllers import GameController
 from tkinter import font
@@ -10,7 +11,7 @@ from .mapdrag import MapDrag
 from .mapzoom import MapZoom
 
 class Map:
-    def __init__(self, root, game_controller, rows=10, cols=10, case_size=50):
+    def __init__(self, root, game_controller, case_size=50, map_data = None):
         self.root = root
         self.case_size = case_size
         self.gamecontroller = game_controller
@@ -23,10 +24,15 @@ class Map:
         self.selected_action = None  # Action en cours
         self.territoire_selectionne = []
         self.village_affiché = None
-        self.width_map = 100
-        self.height_map = 100
-
-        self.grid = GenerateMap(self.width_map,self.height_map,self.gamecontroller.villages).grid
+        if map_data:
+            self.width_map = map_data["width"]
+            self.height_map = map_data["height"]
+            self.grid = map_data["grid"]
+        else:
+            self.width_map = 100
+            self.height_map = 100
+            self.load_info_map()
+            self.grid = GenerateMap(self.width_map,self.height_map,self.gamecontroller.villages).grid
         # Cadre pour la carte (grille)
         self.map_frame = tk.Frame(self.root, bg="#2E2E2E")
         self.map_frame.pack(expand=True, fill="both", padx=5, pady=1)
@@ -44,6 +50,12 @@ class Map:
 
         # Ajouter un binding pour détecter le clic droit
         self.canvas.bind("<Control-Button-3>", self.clic_droit_village)
+
+    def load_info_map(self):
+        with open("src/settings.json", "r") as f:
+           data = json.load(f)
+        self.height_map = data["HAUTEUR_MAP"]
+        self.width_map = data["LARGEUR_MAP"]
 
     def creer_grille_carte(self, case_size=50):
         self.map_compenser_x = 0  # Compensateur horizontal de la carte
@@ -73,10 +85,13 @@ class Map:
         """Centre la carte sur le village du joueur."""
         # Récupérer les coordonnées du village du joueur
         print("centrer")
+        village_coords = None
         for village in self.gamecontroller.villages:
+            print("cherche village...")
             if village.noble == self.gamecontroller.joueur:
+                print("village trouve")
                 village_coords = village.get_coords()
-        
+        print(village_coords)
         if not village_coords:
             print("Aucun village trouvé pour centrer la carte.")
             return
@@ -127,8 +142,8 @@ class Map:
 
         colors_batiments = {
             "terrain": "#A67B5B",
-            "habitation": "#A67B5B",
-            "camp": "#A67B5B"
+            "habitation": "#C19A6B",
+            "camp": "#B22222"
         }
         
         for row in range(self.nb_lignes_visibles):  # Dynamique pour les lignes
@@ -159,9 +174,9 @@ class Map:
                             color = colors.get(case.type, "white")"""
                     self.canvas.create_rectangle(x0, y0, x1, y1, fill=color, outline="")
                     if case.batiment!=None:
-                        self.canvas.create_rectangle(x0+5, y0+5, x1-5, y1-5, fill=color_batiment, outline="")
+                        self.canvas.create_rectangle(x0+(self.case_size/6), y0+(self.case_size/6), x1-(self.case_size/6), y1-(self.case_size/6), fill=color_batiment, outline="")
                     self.dessiner_bordures(case, x0, y0, x1, y1)
-        # self.mettre_a_jour_bordures()
+        #self.mettre_a_jour_bordures()
         keys_list = list(self.highlighted_cases.keys())
         self.highlighted_cases.clear()
         for i in keys_list:
@@ -315,6 +330,7 @@ class Map:
             self.interface.action_bouton_selectionnee = None
             self.village_affiché = village
 
+
 ###  A REFAIRE ###
         def get_village(self, row, col):
             """
@@ -368,7 +384,13 @@ class Map:
                 elif voisin.row > case.row:  # Droite
                     self.canvas.create_line(x2 - offset, y1 + offset, x2 - offset, y2 - offset, fill=couleur_bordure, width=2, tags=f"border_{case.row}_{case.col}")
    
-     
+    def mettre_a_jour_bordures(self):
+        """Met à jour les bordures de toutes les cases."""
+        for i in self.grid:
+            for case in i:
+                x1, y1, x2, y2 = self.get_coords_case(case)
+                self.dessiner_bordures(case, x1, y1, x2, y2)
+
     def get_coords_case(self, case):
         """Retourne les coordonnées de la case donnée."""
         x1 = (case.row- self.map_compenser_x) * self.case_size
@@ -389,3 +411,9 @@ class Map:
                     return True
         return False
 
+    def to_dict(self):
+        return {
+            "width":self.width_map,
+            "height":self.height_map,
+            "cases": [[case.to_dict() for case in ligne] for ligne in self.grid]  # Assurez-vous que chaque case a une méthode to_dict()
+        }

@@ -11,15 +11,15 @@ class Noble(Personne):
     """
     from src.views import Case
 
-    def __init__(self, nom: str, age: int, ressources: int, argent: int, bonheur: int, couleur_bordure="#FFFFFF"):
+    def __init__(self, nom: str, age: int, ressources: int, argent: int, bonheur: int, couleur_bordure="#FFFFFF", capacite_habitants=10, capacite_soldats=5):
         super().__init__(nom, age, ressources, argent, bonheur)
         self.couleur_bordure = couleur_bordure  # Couleur unique pour le seigneur
         self.village_noble = None
         self.armee: List[Soldat] = []  # Liste des soldats appartenant au Noble
         self.seigneur = None  # Instance de Seigneur
         self.cases: List[Case] = []  # Liste des cases détenues par le Noble
-        self.capacite_habitants = 10  # Nombre maximum d'habitants dans le village
-        self.capacite_soldats = 5  # Nombre maximum de soldats dans l'armée
+        self.capacite_habitants = capacite_habitants  # Nombre maximum d'habitants dans le village
+        self.capacite_soldats = capacite_soldats  # Nombre maximum de soldats dans l'armée
 
 
     def ajouter_village(self, village):
@@ -68,14 +68,18 @@ class Noble(Personne):
             self.village_noble.habitants.remove(plus_riche)  # Retire le plus riche des habitants
 
             # Retourne une instance de Seigneur avec le village géré par le nouveau noble
-            seigneur = Seigneur("seigneur", self.age, self.ressources, self.argent, self.bonheur, self.couleur_bordure)
+            seigneur = Seigneur("seigneur", self.age, self.ressources, self.argent, self.bonheur, self.couleur_bordure, self.capacite_habitants, self.capacite_soldats)
             seigneur.vassaux.append(nouveau_noble)
             seigneur.vassaux.append(noble_vassalisé)
             seigneur.cases = self.cases
+            seigneur.capacite_habitants += noble_vassalisé.capacite_habitants
+            seigneur.capacite_soldats += noble_vassalisé.capacite_soldats
             nouveau_noble.seigneur = seigneur
             nouveau_noble.village_noble = self.village_noble
             nouveau_noble.cases = []
             noble_vassalisé.seigneur = seigneur
+            noble_vassalisé.capacité_habitants = 0
+            noble_vassalisé.capacité_soldats = 0
             for case in seigneur.cases:
                 case.proprietaire = seigneur
             print(noble_vassalisé.cases)
@@ -95,7 +99,9 @@ class Noble(Personne):
     def devenir_seigneur_contre_seigneur(self, seigneur):
         from .seigneur import Seigneur
         print(len(seigneur.vassaux))
-        nouv_seigneur = Seigneur("seigneur", self.age, self.ressources, self.argent, self.bonheur, self.couleur_bordure)
+        nouv_seigneur = Seigneur("seigneur", self.age, self.ressources, self.argent, self.bonheur, self.couleur_bordure, self.capacite_habitants, self.capacite_soldats)
+        nouv_seigneur.capacite_habitants += seigneur.capacite_habitants
+        nouv_seigneur.capacite_soldats += seigneur.capacite_soldats
         for noble in seigneur.vassaux:
             nouv_seigneur.ajouter_vassal(noble)
         for case in seigneur.cases:
@@ -107,7 +113,7 @@ class Noble(Personne):
         seigneur.vassaux.clear()
         seigneur.cases.clear()
         # creer une nouvelle instance de noble pour le seigneur battu
-        nouveau_noble = Noble(seigneur.nom, seigneur.age, seigneur.ressources, seigneur.argent, seigneur.bonheur, seigneur.couleur_bordure)
+        nouveau_noble = Noble(seigneur.nom, seigneur.age, seigneur.ressources, seigneur.argent, seigneur.bonheur, seigneur.couleur_bordure, 0, 0)
         nouveau_noble.seigneur = nouv_seigneur
         nouveau_noble.village_noble = self.village_noble
         nouveau_noble.village_noble.proprietaire = nouveau_noble
@@ -138,9 +144,24 @@ class Noble(Personne):
         return (
             super().__str__() +
             f", Type : Noble, "
-            f"Village : {self.village_noble}"
+            f" Village : {self.village_noble}"
             f", Armée : {self.armee}"
             f", Cases : {self.cases}"
             f", Seigneur : {self.seigneur}"
             f", Couleur bordure : {self.couleur_bordure}"
         )
+    
+    def to_dict(self):
+        return {
+            "nom": self.nom,
+            "age": self.age,
+            "ressources": self.ressources,
+            "argent": self.argent,
+            "bonheur": self.bonheur,
+            "couleur_bordure": self.couleur_bordure,
+            "capacite_habitants": self.capacite_habitants,
+            "capacite_soldats": self.capacite_soldats,
+            "village_id": self.village_noble.id if self.village_noble else None,
+            "armee": [soldat.to_dict() for soldat in self.armee],
+            "seigneur": self.seigneur.nom if self.seigneur else None
+        }

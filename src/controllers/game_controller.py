@@ -9,48 +9,35 @@ from typing import List
 from src.models import *
 
 class GameController:
-    def __init__(self):
+    def __init__(self, villages=None, nobles = None, joueur = None, tour = 0):
         self.interface = None
-        self.tour = 1
         self.couleurs_possibles = ["#0000FF",  # Bleu
-                            "#800080",  # Violet
-                            "#FFA500",  # Orange
-                            "#FFFFFF"]  # Blanc
-        self.villages, self.nobles = self.creer_villages(4, 3)
+                                   "#800080",  # Violet
+                                   "#FFA500",  # Orange
+                                   "#FFFFFF"]  # Blanc
+        
+        # Si un village est passé en paramètre, l'initialisation prend en compte ce village
+        if villages:
+            self.villages = villages # Remplacer par un village existant
+            self.nobles = nobles
+            self.tour = tour
+            self.joueur = joueur
+            
+        else:
+            self.villages, self.nobles = self.creer_villages(4, 3)  # Créer des villages par défaut
+            self.joueur = self.nobles[0]  # Le premier noble est le joueur
+            self.tour = 1
+            self.joueur.augmenter_argent(1000)
+
         self.seigneurs = []
         self.seigneurs_vassalisés = []
-        self.joueur = self.nobles[0]
+
         # Afficher le statut de chaque village
         for village in self.villages:
             village.afficher_statut()
-        self.joueur.augmenter_argent(1000)
-
-        """self.roturier1 = Roturier("Roturier 1", 20, 10, 10, 10, 5)
-        self.roturier2 = Roturier("Roturier 2", 20, 10, 10, 10, 5)
-        self.paysan1 = Paysan("Paysan 1", 20, 20, 15, 5)
-
-        self.joueur = Noble("joueur", 20, 10, 10, 5)
-
-        # Création du village
-        self.village_joueur = Village("Village du Joueur")
-        self.village_joueur.ajouter_habitant(self.roturier1)
-        self.village_joueur.ajouter_habitant(self.roturier2)
-        self.village_joueur.ajouter_habitant(self.paysan1)
-
-        self.joueur.ajouter_village(self.village_joueur)
-
-        #self.village_joueur.afficher_statut()
-        # Calcul de la production et perception des impôts
-        #self.village_joueur.produire_ressources()
-        self.immigration_action = Immigration(self.joueur)
-        self.immigration_action.immigrer("roturier")
-        self.seigneur = self.joueur.devenir_seigneur()
         
-        self.seigneur.__str__()
-        # Afficher le statut du village
-        self.village_joueur.afficher_statut()"""
 
-        #self.village_joueur.afficher_statut()
+        # Liste des événements
         self.evenements = [
             RecolteAbondante(),
             Epidemie(),
@@ -76,7 +63,7 @@ class GameController:
         nobles = []
         for i in range(n):
             nom_village = f"Village_{i}"
-            village = Village(nom_village)
+            village = Village(i,nom_village)
             
             # Création d'un noble pour chaque village
             noble = Noble(f"Noble_{i}", 30, 100, 50, 5, self.couleurs_possibles[i])
@@ -304,3 +291,29 @@ class GameController:
     #         guerre = GuerreCaracteristique(attaquant, defenseur)
     #         self.guerres.append(guerre)
     #         guerre.declencher()  # Déclenche la guerre et applique les conséquences
+
+
+"""self.roturier1 = Roturier("Roturier 1", 20, 10, 10, 10, 5)
+        self.roturier2 = Roturier("Roturier 2", 20, 10, 10, 10, 5)
+        self.paysan1 = Paysan("Paysan 1", 20, 20, 15, 5)
+
+        self.joueur = Noble("joueur", 20, 10, 10, 5)
+
+        # Création du village
+        self.village_joueur = Village("Village du Joueur")
+        self.village_joueur.ajouter_habitant(self.roturier1)
+        self.village_joueur.ajouter_habitant(self.roturier2)
+        self.village_joueur.ajouter_habitant(self.paysan1)
+
+        self.joueur.ajouter_village(self.village_joueur)
+
+        #self.village_joueur.afficher_statut()
+        # Calcul de la production et perception des impôts
+        #self.village_joueur.produire_ressources()
+        self.immigration_action = Immigration(self.joueur)
+        self.immigration_action.immigrer("roturier")
+        self.seigneur = self.joueur.devenir_seigneur()
+        
+        self.seigneur.__str__()
+        # Afficher le statut du village
+        self.village_joueur.afficher_statut()"""

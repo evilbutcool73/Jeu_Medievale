@@ -34,6 +34,17 @@ class Case:
         """
         if self.batiment is None:
             self.batiment = type_batiment
-            print(f"Bâtiment {type_batiment.nom} construit sur la case ({self.row}, {self.col}).")
+            print(f"Bâtiment {type_batiment} construit sur la case ({self.row}, {self.col}).")
         else:
-            print(f"Impossible de construire : un bâtiment est déjà présent ({self.batiment.nom}).")
+            print(f"Impossible de construire : un bâtiment est déjà présent ({self.batiment}).")
+
+    def to_dict(self):
+        return {
+            "row": self.row,
+            "col": self.col,
+            "type": self.type.value,
+            "proprietaire": self.proprietaire.nom if self.proprietaire else None,
+            "prix": self.prix,
+            "batiment": self.batiment if self.batiment else None,
+            "village": self.village.id if self.village else None
+        }
