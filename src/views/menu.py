@@ -1,11 +1,12 @@
 import tkinter as tk
 from tkinter import font, filedialog
+from tkinter import ttk
+from PIL import Image, ImageTk
 from ..views.interface import JeuInterface
 from ..views.settingsinterface import SettingsInterface
 import json
 # from src.models import *
 from src.models.personnes.noble import Noble
-from src.models.personnes.paysan import Paysan
 from src.models.personnes.roturier import Roturier
 from src.models.personnes.soldat import Soldat
 from src.models.fief.village import Village
@@ -19,8 +20,14 @@ class MenuPrincipal:
         self.cree_menu()
 
     def cree_menu(self):
-        self.root.title("Jeu Médiéval - Menu Principal")
-        self.root.geometry("500x400")
+        self.root.title("Menu Principal")
+        self.root.geometry("650x520")
+        self.root.minsize(520, 520)
+        self.root.maxsize(650, 520)
+        try:
+            self.root.iconbitmap("images/81709.ico")
+        except tk.TclError:
+            print("Icon file not found or unsupported format. Skipping icon setting.")
         self.root.configure(bg="#2E2E2E")
         self.root.resizable(False, True)
 
@@ -28,9 +35,20 @@ class MenuPrincipal:
         self.menu_frame = tk.Frame(self.root, bg="#2E2E2E")
         self.menu_frame.pack(fill="both", expand=True)
 
-        title_font = font.Font(family="Helvetica", size=36, weight="bold")
-        self.label = tk.Label(self.menu_frame, text="Jeu Médiéval", font=title_font, bg="#2E2E2E", fg="#F7F7F7")
-        self.label.pack(pady=30)
+        # Image de fond
+        """ img = Image.open("images/image.webp")
+        img = img.resize((520, 520))
+        img = ImageTk.PhotoImage(img)
+        self.background_label = tk.Label(self.menu_frame, image=img)
+        self.background_label.image = img
+        self.background_label.place(x=0, y=0, relwidth=1, relheight=1)"""
+
+        title_font = font.Font(family="Helvetica", size=30, weight="bold")
+        self.label = tk.Label(self.menu_frame, text="La Guerre des Frontières", font=title_font, bg="#2E2E2E", fg="#F7F7F7")
+        self.label.pack(pady=40)
+
+        separateur = ttk.Separator(self.menu_frame, orient="horizontal")
+        separateur.pack(fill="x", padx=110, pady=5)
 
         # Bouton pour lancer le jeu
         self.start_button = tk.Button(
@@ -66,7 +84,7 @@ class MenuPrincipal:
         # Bouton pour lancer les settings
         self.set_button = tk.Button(
             self.menu_frame,
-            text="Settings",
+            text="Paramètres",
             font=("Helvetica", 16, "bold"),
             bg="#1C6E8C",
             fg="white",
@@ -93,7 +111,7 @@ class MenuPrincipal:
             padx=20,
             pady=10
         )
-        self.quit_button.pack(pady=10)
+        self.quit_button.pack(pady=20)
 
     def ouvrir_settings(self):
         """Lance l'interface des settings dans la même fenêtre."""
@@ -103,6 +121,8 @@ class MenuPrincipal:
     def lancer_jeu(self):
         """Lance l'interface de jeu dans la même fenêtre."""
         self.menu_frame.pack_forget()  # Cache le menu principal
+        self.root.minsize(900,600)
+        self.root.maxsize(11520, 11520)
         self.game_frame = tk.Frame(self.root, bg="#2E2E2E")
         self.game_frame.pack(fill="both", expand=True)
         from ..controllers import GameController

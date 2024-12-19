@@ -11,11 +11,12 @@ class JeuInterface:
         self.root = root
         self.main_frame = main_frame
         self.gamecontroller = game_controller
-        self.root.title("Jeu Médiéval")
+        self.root.title("La Guerre des Frontières")
         self.root.geometry("900x600")
         self.root.configure(bg="#2E2E2E")
         self.root.resizable(True, True)
         self.action_selectionnee = None
+        self.quantite_achete_vend = 0
 
         # Cadre pour l'affichage des informations en haut
         self.info_frame = tk.Frame(self.main_frame, height=50, bg="#3A3A3A")
@@ -28,8 +29,7 @@ class JeuInterface:
         from .map import Map
         self.map = Map(self.map_frame, self.gamecontroller, rows=10, cols=10, case_size=50)"""
 
-        # Gestion de l'événement Échap pour ouvrir le menu pause
-        self.root.bind("<Escape>", self.ouvrir_menu_pause)
+        
 
         ### MENU PAUSE ###
         # Cadre du menu de pause (invisible au départ)
@@ -40,14 +40,14 @@ class JeuInterface:
         self.menu_frame = tk.Frame(self.root,bg="#2E2E2E")
 
         # Bouton Continuer
-        continue_button = tk.Button(self.menu_frame, text="Continuer", command=self.continuer_jeu, width=20, height=2,
+        continue_button = tk.Button(self.menu_frame, text="Reprendre", command=self.continuer_jeu, width=20, height=2,
                                     font=("Helvetica", 16, "bold"),
                                     bg="#1C6E8C",
                                     fg="white",
                                     activebackground="#145374",
                                     activeforeground="white",
                                     bd=0)
-        continue_button.pack(pady=(self.root.winfo_screenheight()//4 - 18 ,10))
+        continue_button.place(relx=0.5, rely=0.3, anchor="center")
 
         # Bouton Paramètres
         settings_button = tk.Button(self.menu_frame, text="Paramètres", command=self.ouvrir_parametres, width=20, height=2,
@@ -57,7 +57,7 @@ class JeuInterface:
                                     activebackground="#145374",
                                     activeforeground="white",
                                     bd=0)
-        settings_button.pack(pady=10)
+        settings_button.place(relx=0.5, rely=0.45, anchor="center")
 
         # Bouton Sauvegarder
         save_button = tk.Button(self.menu_frame, text="Sauvegarder", command=self.sauvegarder_partie, width=20, height=2,
@@ -67,17 +67,17 @@ class JeuInterface:
                                     activebackground="#145374",
                                     activeforeground="white",
                                     bd=0)
-        save_button.pack(pady=10)
+        save_button.place(relx=0.5, rely=0.6, anchor="center")
 
         # Bouton Quitter
         quit_button = tk.Button(self.menu_frame, text="Quitter", command=self.quitter_jeu, width=20, height=2,
                                     font=("Helvetica", 16, "bold"),
-                                    bg="#1C6E8C",
+                                    bg="#D9455F",
                                     fg="white",
                                     activebackground="#145374",
                                     activeforeground="white",
                                     bd=0)
-        quit_button.pack(pady=10)
+        quit_button.place(relx=0.5, rely=0.75, anchor="center")
         ####
 
         # Cadre principal avec deux colonnes
@@ -103,7 +103,7 @@ class JeuInterface:
 
         self.village_info_label = tk.Label(
             self.village_info_frame,
-            text="Ctrl + Clique droit sur un village pour voir ses informations",
+            text="Ctrl + Clique gauche sur un village pour voir ses informations.",
             bg="#2E2E2E",
             fg="#F7F7F7",
             font=("Helvetica", 12),
@@ -126,9 +126,22 @@ class JeuInterface:
         self.afficher_actions()
         self.tour_suivant()
         game_controller.set_interface(self)
+
+        # Gestion de l'événement Échap pour ouvrir le menu pause
+        self.root.bind("<Escape>", self.ouvrir_menu_pause)
+        # Gestion de l'événement Échap pour ouvrir le menu pause
+        self.root.bind("<space>", self.sur_espace)
+
         #afficher toutes les informations des nobles
         for i in self.gamecontroller.nobles:
             i.__str__()
+        
+        self.root.update_idletasks()  # Force l'actualisation de la fenêtre
+        self.map.centrer_sur_village()
+
+    def sur_espace(self, event):
+        print("space")
+        self.map.centrer_sur_village()
 
     def sauvegarder_partie(self):
         """Sauvegarde l'état actuel de la partie dans un fichier JSON."""
@@ -158,6 +171,8 @@ class JeuInterface:
         
         except Exception as e:
             self.afficher_message_journal(f"Erreur lors de la sauvegarde : {e}")
+
+
     
     def afficher_message_journal(self, message):
         """Ajoute un message dans le journal."""
@@ -386,7 +401,7 @@ class JeuInterface:
             # Bouton "Paysan"
             paysan_bouton = tk.Button(
                 left_column,
-                text="Paysan (-1)",
+                text="Paysan (-5)",
                 command=lambda: self.selectionner_action("paysan"),
                 font=("Helvetica", 12),
                 bg="#1C6E8C",
@@ -400,7 +415,7 @@ class JeuInterface:
             # Bouton "Roturier"
             roturier_bouton = tk.Button(
                 left_column,
-                text="Roturier (-2)",
+                text="Roturier (-10)",
                 command=lambda: self.selectionner_action("roturier"),
                 font=("Helvetica", 12),
                 bg="#1C6E8C",
@@ -414,7 +429,7 @@ class JeuInterface:
             # Bouton "Infanterie"
             infanterie_bouton = tk.Button(
                 right_column,
-                text="Infanterie (-5)",
+                text="Infanterie (-10)",
                 command=lambda: self.selectionner_action("infanterie"),
                 font=("Helvetica", 12),
                 bg="#1C6E8C",
@@ -428,7 +443,7 @@ class JeuInterface:
             # Bouton "Cavalier"
             cavalier_bouton = tk.Button(
                 right_column,
-                text="Cavalier (-10)",
+                text="Cavalier (-15)",
                 command=lambda: self.selectionner_action("cavalier"),
                 font=("Helvetica", 12),
                 bg="#1C6E8C",
@@ -529,14 +544,90 @@ class JeuInterface:
             self.action_bouton_selectionnee = "construire"
     
     def afficher_options_marche(self):
+
+        if self.action_selectionnee in ["acheter", "vendre"]:
+            self.action_selectionnee = None
+            self.reset_bouton_couleurs()
+            return
+        
         for widget in self.village_info_frame.winfo_children():
             widget.destroy()
-        """texte = tk.Label(self.village_info_frame, text="Marché", bg="#2E2E2E", fg="#F7F7F7", font=("Helvetica", 12))
-        texte.pack(pady=10)
-        slider = customtkinter.CTkSlider(master=self.village_info_frame, from_=0, to=self.gamecontroller.joueur.argent, orientation="horizontal")
-        slider.pack(pady=10)
-        bouton = tk.Button(self.village_info_frame, text="Acheter", command=lambda: self.acheter_ressources(slider.get()), font=("Helvetica", 12, "bold"), bg="#1C6E8C", fg="white", activebackground="#145374", activeforeground="white", bd=0)
-        bouton.pack(pady=10)"""
+
+        if self.action_bouton_selectionnee == "marche":
+            self.mettre_a_jour_infos_village(self.map.village_affiché)
+            self.action_bouton_selectionnee = None
+            return
+        self.texte1 = None
+        self.slider1 = None
+        self.bouton1 = None
+        self.texte2 = None
+        self.slider2 = None
+        self.bouton2 = None
+
+        def clique_acheter():
+            if getattr(self, 'texte1', None):
+                return
+            if getattr(self, 'texte2', None):
+                self.texte2.destroy()
+                self.texte2 = None
+            if getattr(self, 'slider2', None):
+                self.slider2.destroy()
+                self.slider2 = None
+            if getattr(self, 'bouton2', None):
+                self.bouton2.destroy()
+                self.bouton2 = None
+            choix1.config(bg="#2E2E2E")
+            choix2.config(bg="#3A3A3A")
+            self.texte1 = tk.Label(self.village_info_frame, text="Achète : 0    -   Cout : 0", bg="#2E2E2E", fg="#F7F7F7", font=("Helvetica", 12))
+            self.texte1.pack(side="top", pady=10)
+
+            def update_label(value):
+                self.texte1.config(text=f"Achète : {int(float(value)*1.2)}  -  Cout : {int(float(value))}")
+                self.quantite_achete_vend = int(float(value))
+            
+            self.slider1 = customtkinter.CTkSlider(master=self.village_info_frame, from_=0, to=self.gamecontroller.joueur.argent, orientation="horizontal", command=update_label)
+            self.slider1.pack(pady=10)
+            
+            self.bouton1 = tk.Button(self.village_info_frame, text="Acheter", command=lambda: self.selectionner_action("acheter"), font=("Helvetica", 12, "bold"), bg="#1C6E8C", fg="white", activebackground="#145374", activeforeground="white", bd=0)
+            self.bouton1.pack(pady=10)
+
+        def clique_vendre():
+            if getattr(self, 'texte2', None):
+                return
+            choix1.config(bg="#3A3A3A")
+            choix2.config(bg="#2E2E2E")
+            if getattr(self, 'texte1', None):
+                self.texte1.destroy()
+                self.texte1 = None
+            if getattr(self, 'slider1', None):
+                self.slider1.destroy()
+                self.slider1 = None
+            if getattr(self, 'bouton1', None):
+                self.bouton1.destroy()
+                self.bouton1 = None
+            self.texte2 = tk.Label(self.village_info_frame, text="Vend : 0  -   Pour : 0", bg="#2E2E2E", fg="#F7F7F7", font=("Helvetica", 12))
+            self.texte2.pack(side="top", pady=10)
+            
+            def update_label(value):
+                self.texte2.config(text=f"Vend : {int(float(value))}    -   Pour : {int(float(value)*0.8)}")
+                self.quantite_achete_vend = int(float(value))
+            
+            self.slider2 = customtkinter.CTkSlider(master=self.village_info_frame, from_=0, to=self.gamecontroller.joueur.ressources, orientation="horizontal", command=update_label)
+            self.slider2.pack(pady=10)
+            
+            self.bouton2 = tk.Button(self.village_info_frame, text="Vendre", command=lambda: self.selectionner_action("vendre"), font=("Helvetica", 12, "bold"), bg="#1C6E8C", fg="white", activebackground="#145374", activeforeground="white", bd=0)
+            self.bouton2.pack(pady=10)
+        # Cadre pour les boutons d'achat et de vente
+        marche_frame = tk.Frame(self.village_info_frame, bg="#3A3A3A")
+        marche_frame.pack(fill="x", pady=0)
+
+        choix1 = tk.Button(marche_frame, text="Acheter", command=lambda: clique_acheter(), font=("Helvetica", 12, "bold"), bg="#2E2E2E", fg="white", activebackground="#2E2E2E", activeforeground="white", bd=0)
+        choix1.pack(side="left", fill="x", expand=True)
+        choix2 = tk.Button(marche_frame, text="Vendre", command=lambda: clique_vendre(), font=("Helvetica", 12, "bold"), bg="#3A3A3A", fg="white", activebackground="#2E2E2E", activeforeground="white", bd=0)
+        choix2.pack(side="left", fill="x", expand=True)
+        clique_acheter()
+        self.action_bouton_selectionnee = "marche"
+
         
     def selectionner_action(self, action):
         if self.action_selectionnee == action:
@@ -566,6 +657,8 @@ class JeuInterface:
                 self.guerre_bouton.config(bg="#3498DB")
             elif action == "terrain" or action == "habitation" or action == "camp":
                 self.construire_bouton.config(bg="#3498DB")
+            elif action == "acheter" or action == "vendre":
+                self.marche_bouton.config(bg="#3498DB")
             self.mettre_a_jour_infos_village(self.map.village_affiché)
             
         liste = []
@@ -580,6 +673,7 @@ class JeuInterface:
         self.recruter_bouton.config(bg="#1C6E8C")
         self.guerre_bouton.config(bg="#1C6E8C")
         self.construire_bouton.config(bg="#1C6E8C")
+        self.marche_bouton.config(bg="#1C6E8C")
 
     def tour_suivant(self):
         button_font = font.Font(family="Helvetica", size=12, weight="bold")
@@ -635,14 +729,14 @@ class JeuInterface:
                             self.ajouter_evenement("Vous avez atteint votre capacité maximale d'habitants")
                             return
                         if self.action_selectionnee == "roturier":
-                            if self.gamecontroller.joueur.argent < 2:
+                            if self.gamecontroller.joueur.argent < 10:
                                 self.ajouter_evenement("Vous n'avez pas assez d'argent pour immigrer un roturier")
                                 return
                             self.afficher_tour_journal()
                             immigration.immigrer("roturier")
                             self.ajouter_evenement("Roturier immigré\n")
                         elif self.action_selectionnee == "paysan":
-                            if self.gamecontroller.joueur.argent < 1:
+                            if self.gamecontroller.joueur.argent < 5:
                                 self.ajouter_evenement("Vous n'avez pas assez d'argent pour immigrer un paysan")
                                 return
                             self.afficher_tour_journal()
@@ -658,10 +752,10 @@ class JeuInterface:
                 if self.gamecontroller.joueur.capacite_soldats <= len(self.gamecontroller.joueur.armee):
                     self.ajouter_evenement("Vous avez atteint votre capacité maximale de soldats")
                     return
-                if self.gamecontroller.joueur.argent < 5 and self.action_selectionnee == "infanterie":
+                if self.gamecontroller.joueur.argent < 10 and self.action_selectionnee == "infanterie":
                     self.ajouter_evenement("Vous n'avez pas assez d'argent pour recruter un soldat")
                     return
-                elif self.gamecontroller.joueur.argent < 10 and self.action_selectionnee == "cavalier":
+                elif self.gamecontroller.joueur.argent < 15 and self.action_selectionnee == "cavalier":
                     self.ajouter_evenement("Vous n'avez pas assez d'argent pour recruter un soldat")
                     return
                 self.afficher_tour_journal()
@@ -716,12 +810,32 @@ class JeuInterface:
                     self.finir_tour()
                 else:
                     self.ajouter_evenement("Vous devez choisir un territoire")
+            
+            elif self.action_selectionnee in ["vendre", "acheter"]:
+                if self.quantite_achete_vend == 0:
+                    self.ajouter_evenement("Vous devez choisir une quantité")
+                    return
+                if self.action_selectionnee == "acheter":
+                    self.afficher_tour_journal()
+                    self.ajouter_evenement("Action exécutée: Acheter ressources\n")
+                    self.gamecontroller.joueur.augmenter_ressources(int(self.quantite_achete_vend*1.2))
+                    self.gamecontroller.joueur.diminuer_argent(int(self.quantite_achete_vend))
+                    self.ajouter_evenement("Vous avez acheté "+str(int(self.quantite_achete_vend*1.2))+" ressources pour "+str(int(self.quantite_achete_vend))+" argent\n")
+                elif self.action_selectionnee == "vendre":
+                    self.afficher_tour_journal()
+                    self.ajouter_evenement("Action exécutée: Vendre ressources\n")
+                    self.gamecontroller.joueur.diminuer_ressources(int(self.quantite_achete_vend))
+                    self.gamecontroller.joueur.augmenter_argent(int(self.quantite_achete_vend*0.8))
+                    self.ajouter_evenement("Vous avez vendu "+str(int(self.quantite_achete_vend))+" ressources pour "+str(int(self.quantite_achete_vend*0.8))+" argent\n")
+
+                self.finir_tour()
                 
     
     def finir_tour(self):
         """reset les actions selectionnées"""
         self.action_selectionnee = None
         self.action_bouton_selectionnee = None
+        self.quantite_achete_vend = 0
         self.reset_bouton_couleurs()
         """reinitialiser les selections des cases"""
         from .map import Map

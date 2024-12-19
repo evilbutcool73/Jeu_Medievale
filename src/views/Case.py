@@ -19,6 +19,7 @@ class Case:
         """
         Permet à un joueur d'acheter la case.
         """
+        from src import models
         if self.proprietaire is None and joueur.argent >= self.prix:
             joueur.diminuer_argent(self.prix)
             joueur.ajouter_case(self)

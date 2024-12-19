@@ -48,9 +48,9 @@ class Noble(Personne):
         """Recrute un soldat pour l'armée du noble."""
         self.armee.append(soldat)
         if soldat.type_soldat == "infanterie":
-            self.diminuer_argent(5)
-        elif soldat.type_soldat == "cavalier":
             self.diminuer_argent(10)
+        elif soldat.type_soldat == "cavalier":
+            self.diminuer_argent(15)
         print(f"{self.nom} a recruté {soldat.nom} dans son armée.")
     
     def ajouter_case(self, case):

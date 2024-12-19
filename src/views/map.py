@@ -43,13 +43,9 @@ class Map:
        
         # Ajouter des événements de clic
         self.canvas.bind("<Button-1>", self.on_click)
-        
-        # Bind espace pour retrouver le village facilement
-        print("binding")
-        self.canvas.bind("<a>", self.on_space)
 
-        # Ajouter un binding pour détecter le clic droit
-        self.canvas.bind("<Control-Button-3>", self.clic_droit_village)
+        # Ajouter un binding pour détecter le controle clic droit
+        self.canvas.bind("<Control-Button-1>", self.clic_gauche_village)
 
     def load_info_map(self):
         with open("src/settings.json", "r") as f:
@@ -74,24 +70,17 @@ class Map:
         # Initialiser les gestionnaires pour zoom et drag
         self.zoom_manager = MapZoom(self.canvas, self)
         self.drag_manager = MapDrag(self.canvas, self)
-        self.root.update_idletasks()  # Force l'actualisation de la fenêtre
-        self.centrer_sur_village()
-
-    def on_space(self, event):
-        print("a")
-        self.centrer_sur_village()
+        
 
     def centrer_sur_village(self):
         """Centre la carte sur le village du joueur."""
         # Récupérer les coordonnées du village du joueur
-        print("centrer")
-        village_coords = None
+        village_coords = (0,0)
         for village in self.gamecontroller.villages:
-            print("cherche village...")
             if village.noble == self.gamecontroller.joueur:
-                print("village trouve")
                 village_coords = village.get_coords()
-        print(village_coords)
+                break
+
         if not village_coords:
             print("Aucun village trouvé pour centrer la carte.")
             return
@@ -313,9 +302,9 @@ class Map:
             self.canvas.delete(self.highlighted_cases[(row, col)])
             del self.highlighted_cases[(row, col)]  # Retirer du dictionnaire
 
-    def clic_droit_village(self, event):
+    def clic_gauche_village(self, event):
         """
-        Gère le clic droit sur une case pour afficher les informations du village.
+        Gère le controle clic droit sur une case pour afficher les informations du village.
         """
         # Calculer les coordonnées de la case cliquée
         row = event.y // self.case_size + self.map_compenser_y
@@ -332,21 +321,21 @@ class Map:
 
 
 ###  A REFAIRE ###
-        def get_village(self, row, col):
-            """
-            Retourne le village associé à une case donnée (row, col), ou None si vide.
-            """
-            # Calculer les coordonnées de la case cliquée
-            row = event.y // self.case_size + self.map_compenser_y
-            col = event.x // self.case_size + self.map_compenser_x
+        # def get_village(self, row, col):
+        #     """
+        #     Retourne le village associé à une case donnée (row, col), ou None si vide.
+        #     """
+        #     # Calculer les coordonnées de la case cliquée
+        #     row = event.y // self.case_size + self.map_compenser_y
+        #     col = event.x // self.case_size + self.map_compenser_x
     
-            # Récupérer les données de la caseule
-            case_instance = self.grid[row][col] # Récupère l'objet Case associé
+        #     # Récupérer les données de la caseule
+        #     case_instance = self.grid[row][col] # Récupère l'objet Case associé
     
-            # Vérifier si la caseule est un village
-            village = case_instance.type
-            self.village_affiché = village
-            return village
+        #     # Vérifier si la caseule est un village
+        #     village = case_instance.type
+        #     self.village_affiché = village
+        #     return village
 
     def get_voisins(self, case):
         """Retourne les voisins (haut, bas, gauche, droite) d'une case."""
@@ -410,6 +399,10 @@ class Map:
                 if voisin.proprietaire == defenseur:
                     return True
         return False
+    
+    def chemin_le_plus_court(self,attaquant,defenseur):
+        #renvoie le chemin le plus court entre 2 cases de villages differents
+        return
 
     def to_dict(self):
         return {

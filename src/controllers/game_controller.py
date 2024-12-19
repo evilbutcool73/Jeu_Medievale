@@ -2,6 +2,7 @@ from src.models import Evenement
 from src.models import RecolteAbondante
 from src.models import Epidemie
 from src.models import Immigration
+from src.controllers.bot_controller import action_bots
  
 # from src.models import GuerreCaracteristique
 import random
@@ -27,7 +28,7 @@ class GameController:
             self.villages, self.nobles = self.creer_villages(4, 3)  # Créer des villages par défaut
             self.joueur = self.nobles[0]  # Le premier noble est le joueur
             self.tour = 1
-            self.joueur.augmenter_argent(1000)
+            #self.joueur.augmenter_argent(1000)
 
         self.seigneurs = []
         self.seigneurs_vassalisés = []
@@ -254,34 +255,36 @@ class GameController:
         #produire les ressources de tous les personnages
         for seigneur in self.seigneurs:
             total = seigneur.produire_ressources()
-            if seigneur.ressources < len(seigneur.armee)*2:
-                seigneur.armee.pop(0)
-                if seigneur==self.joueur:
-                    self.interface.ajouter_evenement(f"Le village n'a pas assez de ressources pour l'armée.\n")
-                    self.interface.ajouter_evenement(f"Un soldat est mort de faim.\n")
-            else:
-                seigneur.diminuer_ressources(len(seigneur.armee)*2)
-                if seigneur==self.joueur:
-                    self.interface.ajouter_evenement(f"Le village a dépensé {len(seigneur.armee)*2} ressources pour l'armée.\n")
+            if len(seigneur.armee) != 0:
+                if seigneur.ressources < len(seigneur.armee)*2:
+                    seigneur.armee.pop(0)
+                    if seigneur==self.joueur:
+                        self.interface.ajouter_evenement(f"Le village n'a pas assez de ressources pour l'armée.\n")
+                        self.interface.ajouter_evenement(f"Un soldat est mort de faim.\n")
+                else:
+                    seigneur.diminuer_ressources(len(seigneur.armee)*2)
+                    if seigneur==self.joueur:
+                        self.interface.ajouter_evenement(f"Le village a dépensé {len(seigneur.armee)*2} ressources pour l'armée.\n")
             if seigneur==self.joueur:
                 self.interface.ajouter_evenement(f"Le village a produit {total} ressources.\n")
             
         for noble in self.nobles:
             if noble.seigneur==None:
                 total = noble.produire_ressources()
-                if noble.ressources < len(noble.armee)*2:
-                    noble.armee.pop(0)
-                    if noble==self.joueur:
-                        self.interface.ajouter_evenement(f"Le village n'a pas assez de ressources pour l'armée.\n")
-                        self.interface.ajouter_evenement(f"Un soldat est mort de faim.\n")
-                else:
-                    noble.diminuer_ressources(len(noble.armee)*2)
-                    if noble==self.joueur:
-                        self.interface.ajouter_evenement(f"Le village a dépensé {len(noble.armee)*2} ressources pour l'armée.\n")
+                if len(noble.armee) != 0:
+                    if noble.ressources < len(noble.armee)*2:
+                        noble.armee.pop(0)
+                        if noble==self.joueur:
+                            self.interface.ajouter_evenement(f"Le village n'a pas assez de ressources pour l'armée.\n")
+                            self.interface.ajouter_evenement(f"Un soldat est mort de faim.\n")
+                    else:
+                        noble.diminuer_ressources(len(noble.armee)*2)
+                        if noble==self.joueur:
+                            self.interface.ajouter_evenement(f"Le village a dépensé {len(noble.armee)*2} ressources pour l'armée.\n")
                 if noble==self.joueur:
                     self.interface.ajouter_evenement(f"Le village a produit {total} ressources.\n")
-                
-
+        action_bots(self)
+    
 
     # def verifier_declenchement_guerre(self, seigneurs: List[Seigneur]):
     #     """Détermine si une guerre doit se déclencher entre deux seigneurs aléatoires."""
