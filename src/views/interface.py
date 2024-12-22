@@ -1,10 +1,11 @@
 import tkinter as tk
-from tkinter import font, Toplevel, ttk, filedialog
+from tkinter import font, Toplevel, ttk, filedialog, messagebox
 import json
 from ..models import *
 from ..views.settingsinterface import SettingsInterface
 from src.controllers import *
 import customtkinter
+
 
 class JeuInterface:
     def __init__(self, root, main_frame, game_controller, map_data= None):
@@ -37,6 +38,7 @@ class JeuInterface:
         # self.menu_pause_canvas.create_rectangle(0, 0, self.root.winfo_width(), self.root.winfo_height()) 
         # self.menu_pause_canvas.create_image(0,0,image=tk.PhotoImage(file="images/pause.png")) 
         # Cadre pour les boutons dans le menu de pause
+        self.sauvegarde = False 
         self.menu_frame = tk.Frame(self.root,bg="#2E2E2E")
 
         # Bouton Continuer
@@ -68,6 +70,16 @@ class JeuInterface:
                                     activeforeground="white",
                                     bd=0)
         save_button.place(relx=0.5, rely=0.6, anchor="center")
+
+        # Bouton Retour au Menu
+        retour_menu = tk.Button(self.menu_frame, text="Retour au Menu", command=self.retourner_menu, width=20, height=2,
+                                    font=("Helvetica", 16, "bold"),
+                                    bg="#1C6E8C",
+                                    fg="white",
+                                    activebackground="#145374",
+                                    activeforeground="white",
+                                    bd=0)
+        retour_menu.place(relx=0.5, rely=0.6, anchor="center")
 
         # Bouton Quitter
         quit_button = tk.Button(self.menu_frame, text="Quitter", command=self.quitter_jeu, width=20, height=2,
@@ -168,12 +180,21 @@ class JeuInterface:
                 self.afficher_message_journal("Partie sauvegardée avec succès !")
             else:
                 self.afficher_message_journal("Sauvegarde annulée.")
-        
+            self.sauvegarde = True
         except Exception as e:
             self.afficher_message_journal(f"Erreur lors de la sauvegarde : {e}")
 
 
-    
+    def retourner_menu(self):
+        from src.views import MenuPrincipal 
+        if self.voulez_sauvegarder():
+            self.sauvegarder_partie()
+            self.main_frame.pack_forget()
+            MenuPrincipal(self.root)
+        else:
+            self.main_frame.pack_forget()
+            MenuPrincipal(self.root)
+        
     def afficher_message_journal(self, message):
         """Ajoute un message dans le journal."""
         self.journal_text.config(state=tk.NORMAL)
@@ -196,8 +217,17 @@ class JeuInterface:
 
     def quitter_jeu(self):
         """Quitte le jeu"""
+        if self.voulez_sauvegarder():
+            self.sauvegarder_partie()
         self.root.quit()
+        
 
+    def voulez_sauvegarder(self):
+        if not self.sauvegarde: 
+            return tk.messagebox.askyesno(title="Sauvegarde", message="Voulez vous sauvegarder avant de partir?")
+        else:
+            return False
+        
     def afficher_informations(self):
         label_font = font.Font(family="Helvetica", size=14, weight="bold")
         self.argent_label = tk.Label(self.info_frame, text=f"Argent : {self.gamecontroller.joueur.argent}", bg="#3A3A3A", fg="#F7F7F7", font=label_font)
@@ -705,6 +735,7 @@ class JeuInterface:
 
     def executer_action_selectionnee(self):
         from src.models import Immigration, Seigneur
+        self.sauvegarde = False
         if self.action_selectionnee != None:
             if self.action_selectionnee == "impot":
                 if self.map.selected_villages != []:

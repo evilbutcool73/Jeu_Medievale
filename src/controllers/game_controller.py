@@ -57,7 +57,6 @@ class GameController:
                 if evenement.se_produit():
                     evenement.appliquer(personnage)
 
-
     # Création de plusieurs villages
     def creer_villages(self, n, habitants_par_village):
         villages = []
