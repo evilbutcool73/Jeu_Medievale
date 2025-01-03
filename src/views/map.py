@@ -9,12 +9,15 @@ from PIL import ImageColor
 from .TYPE import TYPE
 from .mapdrag import MapDrag
 from .mapzoom import MapZoom
+from collections import deque
+
 
 class Map:
-    def __init__(self, root, game_controller, case_size=50, map_data = None):
+    def __init__(self, root, game_controller, interface, case_size=50, map_data = None):
         self.root = root
         self.case_size = case_size
         self.gamecontroller = game_controller
+        self.interface = interface
 
         self.highlighted_cases = {}
 
@@ -44,7 +47,7 @@ class Map:
         # Ajouter des événements de clic
         self.canvas.bind("<Button-1>", self.on_click)
 
-        # Ajouter un binding pour détecter le controle clic droit
+        # Ajouter un binding pour détecter le controle clic gauche
         self.canvas.bind("<Control-Button-1>", self.clic_gauche_village)
 
     def load_info_map(self):
@@ -70,7 +73,9 @@ class Map:
         # Initialiser les gestionnaires pour zoom et drag
         self.zoom_manager = MapZoom(self.canvas, self)
         self.drag_manager = MapDrag(self.canvas, self)
-        
+        self.root.update_idletasks()  # Force l'actualisation de la fenêtre
+        self.centrer_sur_village()
+
 
     def centrer_sur_village(self):
         """Centre la carte sur le village du joueur."""
@@ -178,7 +183,7 @@ class Map:
         from src.models import Noble, Seigneur
         # Vérifier si une action est sélectionnée
         if not self.selected_action:
-            print("Aucune action sélectionnée.")
+            self.interface.ajouter_evenement("Aucune action sélectionnée")
             return
         
         # Calculer les coordonnées de la case cliquée
@@ -211,7 +216,16 @@ class Map:
                 self.highlight_case(case_instance.row, case_instance.col)
                 print(f"Village sélectionné : {village.nom}")
         elif self.selected_action in action_construire:
-            if self.selected_action == "terrain" and case_instance.proprietaire is None: #and self.gamecontroller.joueur.possede_case_adjacente(case_instance)
+            if self.selected_action == "terrain":
+                if case_instance.proprietaire != None and case_instance.proprietaire != self.gamecontroller.joueur:
+                    self.interface.ajouter_evenement("Ce territoire est déjà possédé par un autre joueur.")
+                    return
+                if case_instance.proprietaire == self.gamecontroller.joueur:
+                    self.interface.ajouter_evenement("Vous possédez déjà ce territoire.")
+                    return
+                if not self.gamecontroller.joueur.possede_case_adjacente(case_instance):
+                    self.interface.ajouter_evenement("Vous devez posséder une case adjacente.")
+                    return
                 """if case_instance not in self.territoire_selectionne and len(self.territoire_selectionne)==1:
                     self.unhighlight_case(self.territoire_selectionne[0].row, self.territoire_selectionne[0].col)
                     self.territoire_selectionne = []
@@ -256,7 +270,16 @@ class Map:
                     self.territoire_selectionne.remove(case_instance)
                     self.unhighlight_case(case_instance.row, case_instance.col)
                     print(f"Case désélectionnée : ({case_instance.row}, {case_instance.col})")
-        elif type_case == TYPE.village and self.selected_action == "guerre" and self.territoires_adjacents(self.gamecontroller.joueur, case_instance.proprietaire)and case_instance.village not in self.gamecontroller.obtenir_villages_joueur(self.gamecontroller.joueur):
+        elif self.selected_action == "guerre":
+            if type_case != TYPE.village:
+                self.interface.ajouter_evenement("Ce n'est pas un village.")
+                return
+            if case_instance.village in self.gamecontroller.obtenir_villages_joueur(self.gamecontroller.joueur):
+                self.interface.ajouter_evenement("Vous ne pouvez pas déclarer la guerre à votre propre village.")
+                return
+            if not self.territoires_adjacents(self.gamecontroller.joueur, case_instance.proprietaire):
+                self.interface.ajouter_evenement("Vous devez être adjacent au territoire ennemi pour déclarer la guerre.")
+                return
             if self.selected_action not in self.selected_villages and len(self.selected_villages)==1:
                 self.unhighlight_case(self.selected_villages[0].row, self.selected_villages[0].col)
                 self.selected_villages = []
@@ -304,7 +327,7 @@ class Map:
 
     def clic_gauche_village(self, event):
         """
-        Gère le controle clic droit sur une case pour afficher les informations du village.
+        Gère le controle clic gauche sur une case pour afficher les informations du village.
         """
         # Calculer les coordonnées de la case cliquée
         row = event.y // self.case_size + self.map_compenser_y
@@ -313,29 +336,12 @@ class Map:
         case_instance = self.grid[row][col] # Récupère l'objet Case associé
 
         # Vérifier si un village est associé à la case
-        village = case_instance.village  # Méthode pour récupérer le village
-        if village:
-            self.interface.mettre_a_jour_infos_village(village)
+        if case_instance.village or case_instance.batiment == "camp":
+            village =  case_instance.village
+            self.interface.mettre_a_jour_infos_village(case_instance)
             self.interface.action_bouton_selectionnee = None
-            self.village_affiché = village
+            self.village_affiché = case_instance
 
-
-###  A REFAIRE ###
-        # def get_village(self, row, col):
-        #     """
-        #     Retourne le village associé à une case donnée (row, col), ou None si vide.
-        #     """
-        #     # Calculer les coordonnées de la case cliquée
-        #     row = event.y // self.case_size + self.map_compenser_y
-        #     col = event.x // self.case_size + self.map_compenser_x
-    
-        #     # Récupérer les données de la caseule
-        #     case_instance = self.grid[row][col] # Récupère l'objet Case associé
-    
-        #     # Vérifier si la caseule est un village
-        #     village = case_instance.type
-        #     self.village_affiché = village
-        #     return village
 
     def get_voisins(self, case):
         """Retourne les voisins (haut, bas, gauche, droite) d'une case."""
@@ -387,9 +393,7 @@ class Map:
         x2 = x1 + self.case_size
         y2 = y1 + self.case_size
         return x1, y1, x2, y2
-    
-    # Guerre
-###  A REFAIRE ###   
+   
     def territoires_adjacents(self, attaquant, defenseur):
         """
         Vérifie si le territoire d'attaquant est adjacent à celui de défenseur.
@@ -402,7 +406,39 @@ class Map:
     
     def chemin_le_plus_court(self,attaquant,defenseur):
         #renvoie le chemin le plus court entre 2 cases de villages differents
-        return
+        """
+        Trouve le chemin le plus court entre deux cases appartenant à des villages différents.
+        :param attaquant: Coordonnées de la case du village attaquant (row, col).
+        :param defenseur: Coordonnées de la case du village défenseur (row, col).
+        :return: Liste des coordonnées représentant le chemin le plus court.
+        """
+        start = attaquant
+        goal = defenseur
+
+        # File pour la recherche en largeur
+        queue = deque([(start, [start])])  # (case actuelle, chemin jusqu'à la case)
+        visited = set()  # Ensemble des cases déjà visitées
+
+        while queue:
+            current, path = queue.popleft()
+
+            if current in visited:
+                continue
+
+            visited.add(current)
+
+            # Si la case actuelle est la cible, renvoyer le chemin
+            if current == goal:
+                #mettre toutes les cases de path en rouge
+                return path
+
+            # Ajouter les cases adjacentes à la file
+            for voisin in self.get_voisins(current):
+                if voisin not in visited:
+                    queue.append((voisin, path + [voisin]))
+
+        # Si aucun chemin n'est trouvé
+        return []
 
     def to_dict(self):
         return {

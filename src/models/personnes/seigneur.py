@@ -11,10 +11,11 @@ class Seigneur(Noble):
 
     def __init__(self, nom: str, age: int, ressources: int, argent: int, bonheur: int, couleur_bordure="#FFFFFF", capacite_habitants=10, capacite_soldats=5):
         super().__init__(nom, age, ressources, argent, bonheur)
+        self.village_noble = None
         self.couleur_bordure = couleur_bordure  # Couleur unique pour le seigneur
         self.vassaux: List[Noble] = []
         self.armee: List[Soldat] = []  # Liste des soldats dans l'armée du Seigneur
-        self.cases: List[Case] = []  # Liste des cases détenues par le Noble
+        self.cases: List[Case] = []  # Liste des cases détenues par le Seigneur
         self.capacite_habitants = capacite_habitants  # Nombre maximum d'habitants dans le village
         self.capacite_soldats = capacite_soldats  # Nombre maximum de soldats dans l'armée
 
@@ -72,6 +73,7 @@ class Seigneur(Noble):
     def __str__(self):
         return (
             super().__str__() +
+            f", village_noble: {print(self.village_noble)}"
             f", Type : Seigneur, "
             f"Nombre de vassaux : {len(self.vassaux)}"
         )
@@ -85,8 +87,8 @@ class Seigneur(Noble):
             "bonheur": self.bonheur,
             "couleur_bordure": self.couleur_bordure,
             "capacite_habitants": self.capacite_habitants,
-            "capacite_soldats": self.capacite_soldats,
-            "vassaux": [vassal.nom for vassal in self.vassaux], 
-            "armee": [soldat.to_dict() for soldat in self.armee],  # Assure-toi que Soldat possède une méthode to_dict()
-            "cases": [{"row": case.row, "col": case.col, "type": case.type} for case in self.cases],
+            "capacite_soldats": self.capacite_soldats, 
+            "village_id": self.village_noble.id if self.village_noble else None,
+            "armee": [soldat.to_dict() for soldat in self.armee],
+            "type" : "seigneur"
         }

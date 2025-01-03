@@ -7,10 +7,11 @@ from ..views.settingsinterface import SettingsInterface
 import json
 # from src.models import *
 from src.models.personnes.noble import Noble
+from src.models.personnes.paysan import Paysan
 from src.models.personnes.roturier import Roturier
 from src.models.personnes.soldat import Soldat
 from src.models.fief.village import Village
-
+from src.models.personnes.seigneur import Seigneur
 from .TYPE import TYPE
 from src.views.Case import Case
 
@@ -21,15 +22,15 @@ class MenuPrincipal:
 
     def cree_menu(self):
         self.root.title("Menu Principal")
-        self.root.geometry("650x520")
-        self.root.minsize(520, 520)
-        self.root.maxsize(650, 520)
+        self.root.geometry("540x530")
+        self.root.minsize(540, 530)
+        #self.root.maxsize(540, 530)
         try:
             self.root.iconbitmap("images/81709.ico")
         except tk.TclError:
             print("Icon file not found or unsupported format. Skipping icon setting.")
         self.root.configure(bg="#2E2E2E")
-        self.root.resizable(False, True)
+        self.root.resizable(True, True)
 
         # Cadre du menu principal
         self.menu_frame = tk.Frame(self.root, bg="#2E2E2E")
@@ -45,10 +46,10 @@ class MenuPrincipal:
 
         title_font = font.Font(family="Helvetica", size=30, weight="bold")
         self.label = tk.Label(self.menu_frame, text="La Guerre des Frontières", font=title_font, bg="#2E2E2E", fg="#F7F7F7")
-        self.label.pack(pady=40)
+        self.label.place(relx=0.5, rely=0.12, anchor="center")
 
         separateur = ttk.Separator(self.menu_frame, orient="horizontal")
-        separateur.pack(fill="x", padx=110, pady=5)
+        separateur.place(relx=0.5, rely=0.25, anchor="center", relwidth=0.7)
 
         # Bouton pour lancer le jeu
         self.start_button = tk.Button(
@@ -64,7 +65,7 @@ class MenuPrincipal:
             padx=20,
             pady=10
         )
-        self.start_button.pack(pady=20)
+        self.start_button.place(relx=0.5, rely=0.4, anchor="center")
 
         self.charger_button = tk.Button(
             self.menu_frame,
@@ -79,7 +80,7 @@ class MenuPrincipal:
             padx=20,
             pady=10
         )
-        self.charger_button.pack(pady=20)
+        self.charger_button.place(relx=0.5, rely=0.55, anchor="center")
 
         # Bouton pour lancer les settings
         self.set_button = tk.Button(
@@ -95,7 +96,7 @@ class MenuPrincipal:
             padx=20,
             pady=10
         )
-        self.set_button.pack(pady=20)
+        self.set_button.place(relx=0.5, rely=0.7, anchor="center")
 
         # Bouton pour quitter
         self.quit_button = tk.Button(
@@ -111,7 +112,29 @@ class MenuPrincipal:
             padx=20,
             pady=10
         )
-        self.quit_button.pack(pady=20)
+        self.quit_button.place(relx=0.5, rely=0.85, anchor="center")
+        
+        self.aide_bouton = tk.Button(
+            self.menu_frame,
+            text="Aide",
+            font=("Helvetica", 16, "bold"),
+            bg="#2E2E2E",
+            fg="white",
+            activebackground="#2E2E2E",
+            activeforeground="white",
+            command=self.ouvrir_aide,
+            bd=0,
+            padx=20,
+            pady=10,
+            width=10,
+            height=2
+        )
+        self.aide_bouton.place(relx=0.77, rely=0.89)
+        
+    def ouvrir_aide(self):
+        from src.views import AideInterface
+        AideInterface = AideInterface(self.root, self.menu_frame)
+        AideInterface.afficher()
 
     def ouvrir_settings(self):
         """Lance l'interface des settings dans la même fenêtre."""
@@ -132,6 +155,9 @@ class MenuPrincipal:
 
     def charger_partie(self):
         fichier = filedialog.askopenfilename(filetypes=[("Fichiers JSON", "*.json")])
+        if not fichier:
+            # Si l'utilisateur clique sur "Annuler", retourner sans faire d'autres actions
+            return
         if fichier:
             with open(fichier, "r") as f:
                 try:
@@ -139,14 +165,16 @@ class MenuPrincipal:
                     data = json.load(f)
                     
                     # Mettre à jour l'état du jeu avec les données chargées
-                    villages, nobles, joueur = self.charger_villages(data['villages'], data['joueur'])
-                    map_data = self.charger_map(data['map'], villages, nobles)
+                    villages, nobles, joueur, seigneur = self.charger_villages(data['villages'], data['joueur'], data['seigneurs'])
+                    map_data = self.charger_map(data['map'], villages, nobles, seigneur)
                     tour = data["tour"]
                     
                     print("Partie chargée avec succès.")
                 except json.JSONDecodeError:
                     print("Erreur lors de la lecture du fichier JSON.")
         self.menu_frame.pack_forget()  # Cache le menu principal
+        self.root.minsize(900,600)
+        self.root.maxsize(11520, 11520)
         self.game_frame = tk.Frame(self.root, bg="#2E2E2E")
         self.game_frame.pack(fill="both", expand=True)
         from ..controllers import GameController
@@ -154,24 +182,63 @@ class MenuPrincipal:
         game_controller = GameController(villages=villages, nobles=nobles, tour=tour, joueur = joueur)
         JeuInterface(self.root, self.game_frame, game_controller, map_data = map_data)  # Affiche l'interface du jeu
 
-    def charger_villages(self, villages_data, joueur_data):
+    def charger_villages(self, villages_data, joueur_data, seigneur_data):
         villages = []
         nobles = []
+        seigneur_dict = {}
+        seigneurs = []
 
-        ### gerer le cas ou c'est un Seigneur ###
-        
-        joueur = Noble(
-            joueur_data["nom"], 
-            joueur_data["age"], 
-            joueur_data["ressources"], 
-            joueur_data["argent"], 
-            joueur_data["bonheur"], 
-            joueur_data["couleur_bordure"]
-        )
+        ### gerer le cas ou c'est un seigneurs ###
+        if joueur_data["type"]=="seigneur":
+            joueur = Seigneur(
+                joueur_data["nom"], 
+                joueur_data["age"], 
+                joueur_data["ressources"], 
+                joueur_data["argent"], 
+                joueur_data["bonheur"], 
+                joueur_data["couleur_bordure"],
+                joueur_data["capacite_habitants"],
+                joueur_data["capacite_soldats"]
+            )
+            seigneur_dict[joueur_data["village_id"]]=joueur
+            seigneurs.append(joueur)
+        else:
+            joueur = Noble(
+                joueur_data["nom"], 
+                joueur_data["age"], 
+                joueur_data["ressources"], 
+                joueur_data["argent"], 
+                joueur_data["bonheur"], 
+                joueur_data["capacite_habitants"],
+                joueur_data["capacite_soldats"]
+            )
+            nobles.append(joueur)
+        for s in seigneur_data:
+            seigneur_act = Seigneur(
+                s["nom"], 
+                s["age"], 
+                s["ressources"], 
+                s["argent"], 
+                s["bonheur"], 
+                s["couleur_bordure"],
+                s["capacite_habitants"],
+                s["capacite_soldats"]
+            )
+            if seigneur_act.nom != joueur.nom:
+                seigneur_dict[s["village_id"]]=seigneur_act
+                seigneurs.append(seigneur)
+            if s["armee"] != None:
+                for soldat in s["armee"]:
+                    s = Soldat(soldat["nom"], soldat["force"], soldat["type_soldat"])
+                    seigneur_act.armee.append(s)
+
         for village_data in villages_data:
             # Créer le village
             village = Village(village_data["id"], village_data["nom"])
-
+            if village.id in seigneur_dict:
+                seigneur = seigneur_dict[village.id]
+                seigneur.village_noble = village
+                
             # Créer et ajouter le noble
             noble_data = village_data["noble"]
             if noble_data["nom"] == joueur.nom:
@@ -189,7 +256,10 @@ class MenuPrincipal:
                 for soldat in noble_data["armee"]:
                     s = Soldat(soldat["nom"], soldat["force"], soldat["type_soldat"])
                     noble.armee.append(s)
-
+            if noble_data["seigneur"] != None:
+                for seigneur in seigneur_dict.values():
+                    if seigneur.nom == noble_data["seigneur"]:
+                        seigneur.ajouter_vassal(noble)
             noble.ajouter_village(village)
             village.ajouter_noble(noble)
 
@@ -209,22 +279,24 @@ class MenuPrincipal:
             villages.append(village)
             nobles.append(noble)
             print(f"{village_data['nom']} a été chargé avec succès.")
-        return villages, nobles, joueur
+        for seigneur in seigneur_dict.values():
+            print(seigneur)
+        return villages, nobles, joueur, seigneurs
 
-    def charger_map(self, map_data, villages, nobles):
+    def charger_map(self, map_data, villages, nobles, seigneurs):
         # Associer chaque village avec son noble
         village_dict = {village.id: village for village in villages}
         noble_dict = {noble.nom: noble for noble in nobles}
+        seigneurs_dict = {seigneur.nom: seigneur for seigneur in seigneurs}
         width = map_data['width']
         height = map_data['height']
 
         # Assurez-vous que la carte est correctement initialisée avec les bonnes dimensions
         grid = [[None for _ in range(width)] for _ in range(height)]
-        
+
         # Charger les cases de la carte
         for row, cases_data in enumerate(map_data['cases']):
             for col , case_data  in enumerate(cases_data):
-                print("case data",case_data, "col: ", col)
                 
                 # Créer la case si elle n'existe pas déjà
                 if grid[row][col] is None:
@@ -244,11 +316,17 @@ class MenuPrincipal:
                         print(f"Village {village.nom} placé à la position ({row}, {col}).")
 
                 if case_data["proprietaire"] != None:
+                    print(seigneurs_dict.get(case_data["proprietaire"]))
                     noble = noble_dict.get(case_data["proprietaire"])
                     if noble:
                         case = grid[row][col]
                         case.proprietaire = noble
                         noble.ajouter_case(case)
+                    seigneur = seigneurs_dict.get(case_data["proprietaire"])
+                    if seigneur:
+                        case = grid[row][col]
+                        case.proprietaire = seigneur
+                        seigneur.ajouter_case(case)
 
                 if case_data["batiment"] != None: 
                     case = grid[row][col]
@@ -259,7 +337,6 @@ class MenuPrincipal:
 
     def determine_terrain_by_data(self, case_data):
         # Fonction pour déterminer le terrain basé sur les données de la case JSON
-        print(case_data["type"])
         if case_data["type"] == "village":
             return TYPE.village
         elif case_data["type"] == "eau":

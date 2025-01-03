@@ -2,20 +2,30 @@ from src.models import Evenement
 from src.models import RecolteAbondante
 from src.models import Epidemie
 from src.models import Immigration
+from src.views.TYPE import TYPE
 from src.controllers.bot_controller import action_bots
- 
+
 # from src.models import GuerreCaracteristique
 import random
+import json
 from typing import List
 from src.models import *
 
 class GameController:
     def __init__(self, villages=None, nobles = None, joueur = None, tour = 0):
         self.interface = None
+
+        # Lire le fichier settings.json
+        with open('src/settings.json', 'r') as f:
+            settings = json.load(f)
+
+        # Extraire la valeur de NB_VILLAGE
+        NB_VILLAGE = settings.get('NB_VILLAGE', 4)  # Utiliser 4 comme valeur par défaut si NB_VILLAGE n'est pas défini
         self.couleurs_possibles = ["#0000FF",  # Bleu
                                    "#800080",  # Violet
                                    "#FFA500",  # Orange
                                    "#FFFFFF"]  # Blanc
+        self.nom_couleurs = ["Bleu", "Violet", "Orange", "Blanc"]
         
         # Si un village est passé en paramètre, l'initialisation prend en compte ce village
         if villages:
@@ -25,7 +35,7 @@ class GameController:
             self.joueur = joueur
             
         else:
-            self.villages, self.nobles = self.creer_villages(4, 3)  # Créer des villages par défaut
+            self.villages, self.nobles = self.creer_villages(NB_VILLAGE, 3)  # Créer des villages par défaut
             self.joueur = self.nobles[0]  # Le premier noble est le joueur
             self.tour = 1
             #self.joueur.augmenter_argent(1000)
@@ -57,6 +67,7 @@ class GameController:
                 if evenement.se_produit():
                     evenement.appliquer(personnage)
 
+
     # Création de plusieurs villages
     def creer_villages(self, n, habitants_par_village):
         villages = []
@@ -66,7 +77,7 @@ class GameController:
             village = Village(i,nom_village)
             
             # Création d'un noble pour chaque village
-            noble = Noble(f"Noble_{i}", 30, 100, 50, 5, self.couleurs_possibles[i])
+            noble = Noble(self.nom_couleurs[i], 30, 100, 50, 5, self.couleurs_possibles[i])
             noble.ajouter_village(village)
             village.ajouter_noble(noble)
             # Ajouter le noble comme gestionnaire du village
@@ -143,9 +154,9 @@ class GameController:
                 joueur.diminuer_argent(10)
                 joueur.capacite_soldats += 5
                 case.batiment = type_batiment
-                self.interface.ajouter_evenement(f"{joueur.nom} a construit un camp d'entraînement dans le village.\n")
+                self.interface.ajouter_evenement(f"{joueur.nom} a construit un camp dans le village.\n")
             else:
-                self.interface.ajouter_evenement(f"{joueur.nom} n'a pas assez d'argent pour construire un camp d'entraînement.\n")
+                self.interface.ajouter_evenement(f"{joueur.nom} n'a pas assez d'argent pour construire un camp.\n")
                 return False
 
     def guerre(self, attaquant, defenseur):
@@ -170,10 +181,10 @@ class GameController:
             pertes = int(force_defensive / 2)  # L'attaquant subit des pertes équivalentes à la moitié de la force défensive
             attaquant.armee = attaquant.armee[:len(attaquant.armee) - pertes]
             defenseur.armee = []  # Défenseur perd toute son armée
-            self.interface.ajouter_evenement(f"L'attaquant remporte la guerre contre le defenseur !\n")
             if isinstance(attaquant,Seigneur) and isinstance(defenseur,Seigneur):
                 attaquant.ajouter_vassal_seigneur(defenseur)
                 self.seigneurs_vassalisés.append(defenseur)
+                self.seigneurs.remove(defenseur)
             elif isinstance(attaquant,Seigneur) and isinstance(defenseur,Noble):
                 attaquant.ajouter_vassal(defenseur)
             elif isinstance(attaquant,Noble) and isinstance(defenseur,Seigneur):
@@ -184,21 +195,26 @@ class GameController:
                 self.seigneurs.remove(defenseur)
                 if self.joueur == attaquant:
                     self.joueur = nouv_attaquant
+                elif self.joueur == defenseur:
+                    self.joueur = None
             elif isinstance(attaquant,Noble) and isinstance(defenseur,Noble):
                 nouv_attaquant, nouv_defenseur = attaquant.devenir_seigneur(defenseur)
                 self.seigneurs.append(nouv_attaquant)
-                self.nobles.remove(attaquant)
                 self.nobles.append(nouv_defenseur)
+                self.nobles.remove(attaquant)
                 if self.joueur == attaquant:
                     self.joueur = nouv_attaquant
+                if self.joueur == defenseur:
+                    self.joueur = None
+            self.interface.ajouter_evenement(f"L'attaquant remporte la guerre contre le defenseur !\n")
         elif force_attaquante < force_defensive:
             pertes = int(force_attaquante / 2)  # Le défenseur subit des pertes équivalentes à la moitié de la force attaquante
             defenseur.armee = defenseur.armee[:len(defenseur.armee) - pertes]
             attaquant.armee = []  # Attaquant perd toute son armée
-            self.interface.ajouter_evenement(f"Le defenseur défend avec succès contre l'attaquant !\n")
             if isinstance(defenseur,Seigneur) and isinstance(attaquant,Seigneur):
                 defenseur.ajouter_vassal_seigneur(attaquant)
                 self.seigneurs_vassalisés.append(attaquant)
+                self.seigneurs.remove(attaquant)
             elif isinstance(defenseur,Seigneur) and isinstance(attaquant,Noble):
                 defenseur.ajouter_vassal(attaquant)
             elif isinstance(defenseur,Noble) and isinstance(attaquant,Seigneur):
@@ -207,19 +223,30 @@ class GameController:
                 self.seigneurs_vassalisés.append(nouv_attaquant)
                 self.nobles.remove(defenseur)
                 self.seigneurs.remove(attaquant)
-                if self.joueur == attaquant:
+                if self.joueur == defenseur:
                     self.joueur = nouv_defenseur
+                if self.joueur == attaquant:
+                    self.joueur = None
             elif isinstance(defenseur,Noble) and isinstance(attaquant,Noble):
+                if defenseur == self.joueur:
+                    self.interface.ajouter_evenement(f"{attaquant.nom} vous a attaqué")
                 nouv_defenseur, nouv_attaquant = defenseur.devenir_seigneur(attaquant)
                 self.seigneurs.append(nouv_defenseur)
-                self.nobles.remove(attaquant)
+                self.nobles.remove(defenseur)
                 self.nobles.append(nouv_attaquant)
-                if self.joueur == attaquant:
+                if self.joueur == defenseur:
                     self.joueur = nouv_defenseur
+                if self.joueur == attaquant:
+                    self.joueur = None
+            self.interface.ajouter_evenement(f"Le defenseur défend avec succès contre l'attaquant !\n")
+
         else:
             # En cas d'égalité, les deux armées s'annihilent
             attaquant.armee = []
             defenseur.armee = []
+            if defenseur == self.joueur:
+                self.interface.ajouter_evenement(f"{attaquant.nom} vous a attaqué")
+                self.interface.ajouter_evenement(f"Match nul : les deux armées ont été détruites.\n")
             self.interface.ajouter_evenement("Match nul : les deux armées ont été détruites.\n")
         
     def tour_suivant(self):
@@ -241,17 +268,7 @@ class GameController:
             print("seigneur:",self.seigneurs[0].seigneur)"""
 
         self.tour += 1
-        #self.appliquer_evenements(self.nobles)
-        #self.appliquer_evenements(self.seigneurs)
-        #self.verifier_declenchement_guerre(self.seigneurs)
-        #self.verifier_declenchement_guerre(self.nobles)
-        """for village in self.villages:
-            village.afficher_statut()
-        for noble in self.nobles:
-            noble.__str__()
-        for seigneur in self.seigneurs:
-            seigneur.__str__()"""
-        #produire les ressources de tous les personnages
+        
         for seigneur in self.seigneurs:
             total = seigneur.produire_ressources()
             if len(seigneur.armee) != 0:
@@ -264,8 +281,26 @@ class GameController:
                     seigneur.diminuer_ressources(len(seigneur.armee)*2)
                     if seigneur==self.joueur:
                         self.interface.ajouter_evenement(f"Le village a dépensé {len(seigneur.armee)*2} ressources pour l'armée.\n")
+            montagne,foret,eau=0,0,0
+            for case in seigneur.cases:
+                if case.type in [TYPE.montagne,TYPE.montagneclair]:
+                    seigneur.augmenter_argent(5)
+                    montagne+=5
+                elif case.type in [TYPE.foret,TYPE.foretclair]:
+                    seigneur.augmenter_ressources(4)
+                    foret+=4
+                elif case.type in [TYPE.eau,TYPE.eauclair]:
+                    seigneur.augmenter_ressources(7)
+                    eau+=7
             if seigneur==self.joueur:
-                self.interface.ajouter_evenement(f"Le village a produit {total} ressources.\n")
+                if total:
+                    self.interface.ajouter_evenement(f"Le village a produit {total} ressources.\n")
+                    if montagne:
+                        self.interface.ajouter_evenement(f"Le village a produit {montagne} argent grace aux montagnes")
+                    if foret:
+                        self.interface.ajouter_evenement(f"Le village a produit {foret} ressources grace aux forets")
+                    if eau:
+                        self.interface.ajouter_evenement(f"Le village a produit {eau} ressources grace aux eaux\n")
             
         for noble in self.nobles:
             if noble.seigneur==None:
@@ -280,42 +315,34 @@ class GameController:
                         noble.diminuer_ressources(len(noble.armee)*2)
                         if noble==self.joueur:
                             self.interface.ajouter_evenement(f"Le village a dépensé {len(noble.armee)*2} ressources pour l'armée.\n")
+                montagne,foret,eau=0,0,0
+                for case in noble.cases:
+                    if case.type in [TYPE.montagne,TYPE.montagneclair]:
+                        noble.augmenter_argent(5)
+                        montagne+=5
+                    elif case.type in [TYPE.foret,TYPE.foretclair]:
+                        noble.augmenter_ressources(4)
+                        foret+=4
+                    elif case.type in [TYPE.eau,TYPE.eauclair]:
+                        noble.augmenter_ressources(7)
+                        eau+=7
                 if noble==self.joueur:
-                    self.interface.ajouter_evenement(f"Le village a produit {total} ressources.\n")
-        action_bots(self)
-    
-
-    # def verifier_declenchement_guerre(self, seigneurs: List[Seigneur]):
-    #     """Détermine si une guerre doit se déclencher entre deux seigneurs aléatoires."""
-    #     if random.random() < 0.1:  # Exemple de probabilité de guerre
-    #         attaquant = random.choice(seigneurs)
-    #         defenseur = random.choice([s for s in seigneurs if s != attaquant])
-    #         guerre = GuerreCaracteristique(attaquant, defenseur)
-    #         self.guerres.append(guerre)
-    #         guerre.declencher()  # Déclenche la guerre et applique les conséquences
-
-
-"""self.roturier1 = Roturier("Roturier 1", 20, 10, 10, 10, 5)
-        self.roturier2 = Roturier("Roturier 2", 20, 10, 10, 10, 5)
-        self.paysan1 = Paysan("Paysan 1", 20, 20, 15, 5)
-
-        self.joueur = Noble("joueur", 20, 10, 10, 5)
-
-        # Création du village
-        self.village_joueur = Village("Village du Joueur")
-        self.village_joueur.ajouter_habitant(self.roturier1)
-        self.village_joueur.ajouter_habitant(self.roturier2)
-        self.village_joueur.ajouter_habitant(self.paysan1)
-
-        self.joueur.ajouter_village(self.village_joueur)
-
-        #self.village_joueur.afficher_statut()
-        # Calcul de la production et perception des impôts
-        #self.village_joueur.produire_ressources()
-        self.immigration_action = Immigration(self.joueur)
-        self.immigration_action.immigrer("roturier")
-        self.seigneur = self.joueur.devenir_seigneur()
+                    if total:
+                        self.interface.ajouter_evenement(f"Le village a produit {total} ressources.\n")
+                        if montagne:
+                            self.interface.ajouter_evenement(f"Le village a produit {montagne} argent grace aux montagnes")
+                        if foret:
+                            self.interface.ajouter_evenement(f"Le village a produit {foret} ressources grace aux forets")
+                        if eau:
+                            self.interface.ajouter_evenement(f"Le village a produit {eau} ressources grace aux eaux\n")
         
-        self.seigneur.__str__()
-        # Afficher le statut du village
-        self.village_joueur.afficher_statut()"""
+        # action_bots(self)
+
+        for village in self.villages:
+            for habitant in village.habitants:
+                if habitant.mort_aleatoire():
+                    village.habitants.remove(habitant)
+                    self.interface.ajouter_evenement(f"Un habitant est mort de vieillesse.\n")
+                else:
+                    habitant.vieillir()
+                print(habitant.age)
